@@ -1,0 +1,87 @@
+<?xml version="1.0" encoding="UTF-8" standalone="no"?>
+<ExtensionManifest
+Version="6.0"
+ExtensionBundleId="com.example.terminal.panel"
+ExtensionBundleVersion="0.0.1"
+ExtensionBundleName="Terminal"
+xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+>
+<ExtensionList>
+  <Extension Id="com.example.terminal.panel" Version="0.0.1" />
+  <Extension Id="com.example.terminal.worker" Version="0.0.1" />
+</ExtensionList>
+<ExecutionEnvironment>
+  <HostList>
+    <Host Name="PPRO" Version="[0.0,99.9]" />
+    <Host Name="AEFT" Version="[0.0,99.9]" />
+  </HostList>
+  <LocaleList>
+    <Locale Code="All" />
+  </LocaleList>
+  <RequiredRuntimeList>
+    <RequiredRuntime Name="CSXS" Version="9.0" />
+  </RequiredRuntimeList>
+</ExecutionEnvironment>
+<DispatchInfoList>
+  <Extension Id="com.example.terminal.panel">
+    <DispatchInfo>
+      <Resources>
+        <MainPath>./panel/index.html</MainPath>
+        <ScriptPath>./panel/terminal.jsx</ScriptPath>
+        <CEFCommandLine>
+          <Parameter>--enable-nodejs</Parameter>
+          <Parameter>--mixed-context</Parameter>
+        </CEFCommandLine>
+      </Resources>
+      <Lifecycle>
+        <AutoVisible>true</AutoVisible>
+      </Lifecycle>
+      <UI>
+        <Type>Modeless</Type>
+        <Menu>Terminal</Menu>
+        <Geometry>
+          <Size>
+            <Width>400</Width>
+            <Height>350</Height>
+          </Size>
+          <MinSize>
+            <Width>400</Width>
+            <Height>350</Height>
+          </MinSize>
+          <MaxSize>
+            <Width>400</Width>
+            <Height>350</Height>
+          </MaxSize>
+        </Geometry>
+      </UI>
+    </DispatchInfo>
+  </Extension>
+  <Extension Id="com.example.terminal.worker">
+    <DispatchInfo>
+      <Resources>
+        <MainPath>./worker/index.html</MainPath>
+        <CEFCommandLine>
+          <Parameter>--enable-nodejs</Parameter>
+          <Parameter>--mixed-context</Parameter>
+        </CEFCommandLine>
+      </Resources>
+      <Lifecycle>
+        <AutoVisible>false</AutoVisible>
+        <StartOn>
+          <Event>com.adobe.csxs.events.ApplicationActivate</Event>
+          <Event>applicationActivate</Event>
+        </StartOn>
+      </Lifecycle>
+      <UI>
+        <Type>Custom</Type>
+        <Geometry>
+          <Size>
+            <Width>1</Width>
+            <Height>1</Height>
+          </Size>
+        </Geometry>
+      </UI>
+    </DispatchInfo>
+  </Extension>
+</DispatchInfoList>
+</ExtensionManifest>

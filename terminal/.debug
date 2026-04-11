@@ -1,0 +1,15 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<ExtensionList>
+    <Extension Id="com.example.terminal.panel">
+        <HostList>
+            <Host Name="PPRO" Port="8096" />
+            <Host Name="AEFT" Port="8097" />
+        </HostList>
+    </Extension>
+<Extension Id="com.example.terminal.worker">
+        <HostList>
+            <Host Name="PPRO" Port="8196" />
+            <Host Name="AEFT" Port="8197" />
+        </HostList>
+    </Extension>
+</ExtensionList> 

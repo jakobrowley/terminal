@@ -1,0 +1,2974 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="UTF-8">
+    <title>Terminal</title>
+    <style>
+        body {
+            user-select: none;
+            background-color: #1a1a1a;
+            color: #ffffff;
+            font-family: "SF Pro", "Segoe UI", Arial, sans-serif;
+            margin: 0;
+            height: 100vh;
+            display: flex;
+            flex-direction: column;
+            justify-content: flex-start;
+            align-items: center;
+            overflow: hidden;
+        }
+        
+        /* Logo styles */
+        .logo-container {
+            margin-top: 0;
+            position: absolute;
+            top: 20px;
+            width: 100%;
+            text-align: center;
+            display: flex;
+            justify-content: center;
+            transition: opacity 0.3s ease, transform 0.3s ease;
+            opacity: 1;
+        }
+        
+        .logo {
+            font-size: 18px;
+            font-weight: bold;
+            letter-spacing: 1px;
+            color: #555;
+            text-transform: uppercase;
+            transition: color 0.2s ease;
+        }
+        
+        .logo:hover {
+            color: #888;
+        }
+        
+        /* Search container and styling */
+        .search-wrapper {
+            width: 100%;
+            display: flex;
+            justify-content: center;
+            margin-top: 0;
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            transition: all 0.3s ease;
+        }
+        
+        .search-container {
+            width: 320px;
+            position: relative;
+            transition: width 0.3s ease;
+            display: flex;
+            justify-content: center;
+        }
+        
+        .search-input {
+            width: 100%;
+            padding: 12px 40px;
+            background-color: #2d2d2d;
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            color: white;
+            border-radius: 30px;
+            font-size: 16px;
+            outline: none;
+            transition: all 0.3s ease;
+        }
+        
+        .search-icon {
+            position: absolute;
+            left: 15px;
+            top: 50%;
+            transform: translateY(-50%);
+            color: rgba(255, 255, 255, 0.7);
+            width: 18px;
+            height: 18px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            opacity: 0.7;
+        }
+        
+        /* Results container */
+        .results-container {
+            width: 320px;
+            max-height: 0;
+            overflow: hidden;
+            transition: max-height 0.3s ease, opacity 0.3s ease, width 0.3s ease;
+            opacity: 0;
+            margin-top: 0;
+            border-radius: 8px;
+            background-color: #2d2d2d;
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+        }
+        
+        .result-item {
+            padding: 12px 15px;
+            border-bottom: 1px solid rgba(255, 255, 255, 0.05);
+            display: flex;
+            align-items: center;
+            cursor: pointer;
+            transition: background-color 0.2s ease;
+            position: relative; /* Set positioning context for absolute children */
+        }
+        
+        .result-item:hover {
+            background-color: rgba(255, 255, 255, 0.05);
+        }
+        
+        .result-item:last-child {
+            border-bottom: none;
+        }
+        
+        .result-icon {
+            margin-right: 15px;
+            color: #aaa;
+            font-size: 16px;
+            width: 16px;
+            height: 16px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+        
+        .result-title {
+            font-weight: 500;
+            font-size: 15px;
+        }
+        
+        .result-category {
+            margin-left: auto;
+            font-size: 13px;
+            color: #777;
+            padding: 3px 8px;
+            border-radius: 4px;
+            background-color: rgba(255, 255, 255, 0.05);
+            margin-right: 30px; /* Add space between category and favorite icon */
+        }
+        
+        /* Footer toolbar */
+        .toolbar {
+            position: absolute;
+            bottom: 0;
+            left: 0;
+            right: 0;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            gap: 60px;
+            padding: 20px 0;
+            background-color: #1a1a1a;
+            transition: opacity 0.3s ease, transform 0.3s ease;
+            opacity: 1;
+            text-align: center;
+        }
+        
+        .toolbar-item {
+            color: #555;
+            text-transform: lowercase;
+            font-size: 14px;
+            cursor: pointer;
+            transition: color 0.2s ease;
+        }
+        
+        .toolbar-item:hover {
+            color: #888;
+        }
+        
+        /* Active states when typing */
+        body.typing .logo-container {
+            opacity: 0;
+            transform: translateY(-20px);
+        }
+        
+        body.typing .search-wrapper {
+            margin-top: 0;
+            top: 30px;
+            left: 50%;
+            transform: translateX(-50%);
+        }
+        
+        body.typing .search-container {
+            width: 320px;
+        }
+        
+        body.typing .results-container {
+            max-height: 250px;
+            opacity: 1;
+            width: 320px;
+            position: absolute;
+            top: 85px;
+            left: 50%;
+            transform: translateX(-50%);
+            overflow-y: auto;
+            scrollbar-width: thin;
+            scrollbar-color: rgba(255, 255, 255, 0.3) transparent;
+        }
+        
+        /* Scrollbar styling for WebKit browsers (Chrome, Safari) */
+        body.typing .results-container::-webkit-scrollbar {
+            width: 6px;
+        }
+        
+        body.typing .results-container::-webkit-scrollbar-track {
+            background: transparent;
+        }
+        
+        body.typing .results-container::-webkit-scrollbar-thumb {
+            background-color: rgba(255, 255, 255, 0.3);
+            border-radius: 3px;
+        }
+        
+        body.typing .results-container::-webkit-scrollbar-thumb:hover {
+            background-color: rgba(255, 255, 255, 0.5);
+        }
+        
+        body.typing .toolbar {
+            opacity: 0;
+            transform: translateY(20px);
+            pointer-events: none;
+        }
+        
+        /* Add CSS for selected item */
+        .result-item.selected {
+            background-color: rgba(255, 255, 255, 0.1);
+        }
+        
+        .result-item.ai-response .result-title {
+            flex-grow: 1;
+            white-space: normal;
+            line-height: 1.4;
+        }
+        
+        .result-item.custom-command {
+            border-left: 3px solid #4f8fef;
+            background-color: rgba(79, 143, 239, 0.05);
+        }
+        
+        .result-item.custom-command .result-category {
+            background-color: rgba(79, 143, 239, 0.2);
+            color: rgba(255, 255, 255, 0.9);
+        }
+        
+        .result-item.custom-command.selected {
+            background-color: rgba(79, 143, 239, 0.15);
+        }
+        
+        .result-item.custom-effect {
+            border-left: 3px solid #4f8fef;
+            background-color: rgba(79, 143, 239, 0.05);
+        }
+        
+        .result-item.custom-effect .result-category {
+            background-color: rgba(102, 187, 106, 0.2);
+            color: rgba(255, 255, 255, 0.9);
+        }
+        
+        .result-item.custom-effect.selected {
+            background-color: rgba(79, 143, 239, 0.15);
+        }
+        
+        /* Stack Counter Style */
+        #stack-count {
+            /* Position relative to wrapper */
+            background-color: rgba(79, 143, 239, 0.5);
+            color: white;
+            padding: 3px 8px;
+            border-radius: 10px;
+            font-size: 12px;
+            font-weight: bold;
+            opacity: 0; /* Hidden initially */
+            transition: opacity 0.3s ease;
+            z-index: 10; 
+            cursor: default; /* Indicate it's part of a hover area */
+            display: inline-block; /* Allow positioning within wrapper */
+            margin-bottom: 5px; /* Add space between count and tooltip */
+        }
+        
+        #stack-count.visible {
+            opacity: 1;
+        }
+
+        /* New Wrapper for Hover Area */
+        #stack-hover-wrapper {
+            position: absolute;
+            top: 12px; /* Position the wrapper */
+            right: 15px; /* Position the wrapper */
+            z-index: 15; /* Above input, below tooltip content */
+            display: flex;
+            flex-direction: column;
+            align-items: flex-end; /* Align count and tooltip to the right */
+        }
+
+        /* Stack Tooltip Style (Now Hover Panel) */
+        #stack-tooltip {
+            display: none; /* Hidden by default */
+            position: relative; /* Position relative to wrapper */
+            background-color: #333; /* Slightly darker background */
+            color: #e0e0e0;
+            padding: 10px;
+            border-radius: 6px;
+            box-shadow: 0 3px 8px rgba(0, 0, 0, 0.4);
+            font-size: 13px;
+            width: 280px; /* Set a fixed width */
+            max-height: 250px; /* Limit height */
+            overflow: hidden; /* Hide overflow initially */
+            z-index: 20; /* Ensure it's above other elements */
+            opacity: 0;
+            transition: opacity 0.2s ease, transform 0.2s ease;
+            transform: translateY(-5px);
+        }
+
+        /* Show tooltip when hovering the wrapper */
+        #stack-hover-wrapper:hover #stack-tooltip {
+            display: block; 
+            opacity: 1;
+            transform: translateY(0);
+            overflow-y: auto; /* Enable scroll on hover */
+        }
+
+        #stack-tooltip-list {
+            list-style: none;
+            padding: 0;
+            margin: 0 0 10px 0; /* Space before actions */
+            /* Max height handled by #stack-tooltip */
+        }
+
+        #stack-tooltip-list li {
+            padding: 8px 10px;
+            border-bottom: 1px solid #444;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            font-size: 14px;
+            background-color: #3a3a3a;
+        }
+
+        #stack-tooltip-list li:last-child {
+            border-bottom: none;
+        }
+        
+        /* Reusing modal remove button style */
+        .stack-item-remove-button {
+            background: none;
+            border: none;
+            color: #f07777; /* Reddish color */
+            font-size: 18px;
+            cursor: pointer;
+            padding: 0 5px;
+            line-height: 1;
+            margin-left: 10px;
+        }
+        .stack-item-remove-button:hover {
+            color: #ff4d4d;
+        }
+
+        /* Actions inside the tooltip */
+        .stack-tooltip-actions {
+            display: flex;
+            justify-content: space-between;
+            padding-top: 5px; /* Space above buttons */
+            border-top: 1px solid #444;
+        }
+
+        .stack-tooltip-actions button {
+            padding: 6px 12px;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+            font-size: 13px;
+            font-weight: 500;
+            transition: background-color 0.2s ease;
+        }
+
+        /* Reusing modal button styles */
+        #stack-tooltip-clear {
+            background-color: #666;
+            color: white;
+        }
+        #stack-tooltip-clear:hover {
+            background-color: #777;
+        }
+
+        #stack-tooltip-apply {
+            background-color: #4f8fef; /* Theme blue */
+            color: white;
+        }
+        #stack-tooltip-apply:hover {
+            background-color: #609eef;
+        }
+        
+        /* Favorite Icon Style */
+        .favorite-icon {
+            position: absolute;
+            right: 15px; /* Align to the right */
+            top: 50%;
+            transform: translateY(-50%);
+            font-size: 18px;
+            color: #666; /* Dim color for empty star */
+            cursor: pointer;
+            transition: color 0.2s ease, transform 0.1s ease;
+            padding: 5px; /* Increase clickable area */
+        }
+        
+        .favorite-icon:hover {
+            color: #999;
+            transform: translateY(-50%) scale(1.1); /* Slight scale on hover */
+        }
+        
+        .result-item.is-favorite .favorite-icon {
+            color: #f0c419; /* Gold color for filled star */
+        }
+        
+        .result-item.is-favorite .favorite-icon:hover {
+            color: #d4ac0d; /* Slightly darker gold on hover */
+        }
+
+        /* Style for Parameter Suggestions */
+        .result-item.parameter-suggestion {
+            /* Example: Make text slightly dimmer */
+            color: #bbb; 
+        }
+        
+        .result-item.parameter-suggestion .result-title { 
+             /* Or specifically target the title if needed */
+             /* font-style: italic; */
+        }
+
+        /* Settings View */
+        #settings-view {
+            display: none; /* Hidden by default */
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background-color: #252525; /* Slightly different bg */
+            padding: 25px; /* Slightly reduced padding */
+            box-sizing: border-box;
+            flex-direction: column;
+            align-items: center;
+            /* Removed justify-content: center to align items top */
+            justify-content: flex-start; 
+            color: #ddd;
+            z-index: 50;
+            /*overflow-y: auto;  Allow scrolling if content overflows */
+        }
+
+        #settings-view h3 {
+            margin-top: 0;
+            margin-bottom: 20px; /* Reduced margin */
+            color: #fff;
+            font-weight: 600;
+            width: 100%;
+            text-align: center;
+        }
+
+        .settings-item {
+            margin-bottom: 18px; /* Reduced margin */
+            width: 100%; /* Ensure items take full width */
+            max-width: 320px; /* Limit max width for better centering */
+            display: flex; /* Use flex for alignment */
+            flex-direction: column; /* Default to column */
+            align-items: flex-start; /* Align labels to the start */
+        }
+
+        /* Specific layout for toggle switches and trigger key */
+        .settings-item.inline-setting {
+            flex-direction: row; /* Arrange label and control horizontally */
+            justify-content: space-between; /* Space out label and control */
+            align-items: center; /* Vertically center label and control */
+        }
+
+        .settings-item label {
+            /* Removed display: block */
+            margin-bottom: 8px;
+            font-size: 14px;
+            color: #bbb;
+            /* Removed text-align: center for specific items */
+        }
+        
+        /* Center label only for the shortcut recorder */
+        .settings-item.shortcut-setting label:first-child {
+             width: 100%;
+             text-align: center;
+             margin-bottom: 10px;
+        }
+
+        .settings-item input[type="checkbox"] {
+             margin-right: 10px;
+             vertical-align: middle;
+        }
+
+        .settings-item input[type="text"] {
+            padding: 8px 10px;
+            background-color: #3a3a3a;
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            color: white;
+            border-radius: 5px;
+            font-size: 14px;
+            outline: none;
+            /* Removed text-align: center for general text inputs */
+        }
+
+        /* Keep trigger key input centered */
+        #settings-favorites-trigger {
+            text-align: center;
+        }
+
+        .settings-info {
+            font-size: 13px;
+            color: #888;
+            line-height: 1.4;
+            margin-top: 20px; /* Reduced margin */
+            border-top: 1px solid rgba(255, 255, 255, 0.1);
+            padding-top: 15px;
+            max-width: 320px; /* Match item width */
+            width: 100%;
+            text-align: center;
+        }
+
+        #settings-close-button {
+            position: absolute;
+            top: 15px;
+            right: 15px;
+            background: none;
+            border: none;
+            color: #888;
+            font-size: 24px;
+            cursor: pointer;
+            padding: 5px;
+            line-height: 1;
+        }
+        #settings-close-button:hover {
+             color: #fff;
+        }
+        
+        /* Shortcut Recorder adjustments */
+        .shortcut-recorder {
+            display: flex;
+            align-items: center;
+            gap: 8px; /* Reduced gap */
+            justify-content: center; /* Center recorder items */
+            margin-bottom: 5px; /* Space before display */
+        }
+
+     
+
+        .shortcut-modifier-label {
+            display: inline-flex; 
+            align-items: center;
+            margin-right: 8px; /* Reduced margin */
+            font-size: 13px;
+            color: #bbb;
+        }
+
+        .shortcut-modifier-label input[type="checkbox"] {
+             margin-right: 4px; /* Reduced margin */
+             vertical-align: middle;
+        }
+
+        #settings-shortcut-key-input {
+            width: 50px; /* Slightly smaller */
+            padding: 8px 8px; /* Slightly reduced padding */
+            background-color: #3a3a3a;
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            color: white;
+            border-radius: 5px;
+            font-size: 14px;
+            outline: none;
+            text-align: center;
+            font-family: monospace;
+            text-transform: uppercase; 
+        }
+
+        /* Toggle Switch Styles - Keep as is, seems compact enough */
+        .toggle-switch {
+            position: relative;
+            display: inline-block;
+            width: 50px; /* Width of the switch */
+            height: 26px; /* Height of the switch */
+            vertical-align: middle;
+            margin-left: 10px;
+        }
+
+        .toggle-switch input {
+            opacity: 0;
+            width: 0;
+            height: 0;
+        }
+
+        .toggle-slider {
+            position: absolute;
+            cursor: pointer;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background-color: #4a4a4a; /* Darker background */
+            transition: .3s;
+            border-radius: 26px; /* Rounded slider */
+        }
+
+        .toggle-slider:before {
+            position: absolute;
+            content: "";
+            height: 20px; /* Height of the knob */
+            width: 20px; /* Width of the knob */
+            left: 3px; /* Position from left */
+            bottom: 3px; /* Position from bottom */
+            background-color: white;
+            transition: .3s;
+            border-radius: 50%;
+        }
+
+        input:checked + .toggle-slider {
+            background-color: #4f8fef; /* Blue when checked */
+        }
+
+        input:checked + .toggle-slider:before {
+            transform: translateX(24px); /* Move knob to the right */
+        }
+
+        /* Restore Modifier Checkbox Label Styles */
+        .shortcut-modifier-label {
+            display: inline-flex; /* Align checkbox and text */
+            align-items: center;
+            margin-right: 10px;
+            font-size: 13px;
+            color: #bbb;
+        }
+        
+        .shortcut-modifier-label input[type="checkbox"] {
+             margin-right: 5px;
+             vertical-align: middle;
+        }
+
+        /* Display area below the controls */
+
+
+        /* Stack Manage Button Style */
+        #stack-manage-button {
+            position: absolute;
+            top: 50%;
+            right: 10px; /* Position near the right edge */
+            transform: translateY(-50%);
+            background: none;
+            border: none;
+            color: #888;
+            font-size: 20px; /* Adjust size as needed */
+            cursor: pointer;
+            padding: 5px;
+            line-height: 1;
+            transition: color 0.2s ease;
+        }
+        #stack-manage-button:hover {
+            color: #ccc;
+        }
+
+        /* Modal Base Styles */
+        .modal {
+            position: fixed; /* Stay in place */
+            z-index: 100; /* Sit on top */
+            left: 0;
+            top: 0;
+            width: 100%; /* Full width */
+            height: 100%; /* Full height */
+            overflow: auto; /* Enable scroll if needed */
+            background-color: rgba(0, 0, 0, 0.6); /* Black w/ opacity */
+            display: flex; /* Use flexbox for centering */
+            align-items: center; /* Vertical center */
+            justify-content: center; /* Horizontal center */
+        }
+
+        .modal-content {
+            background-color: #2d2d2d; /* Dark background */
+            margin: auto;
+            padding: 25px;
+            border: 1px solid #444;
+            width: 80%; /* Could be more specific */
+            max-width: 400px; /* Limit max width */
+            border-radius: 8px;
+            color: #eee;
+            position: relative;
+            box-shadow: 0 4px 15px rgba(0, 0, 0, 0.4);
+            display: flex;
+            flex-direction: column;
+        }
+
+        .modal-close-button {
+            color: #aaa;
+            position: absolute;
+            top: 10px;
+            right: 15px;
+            font-size: 28px;
+            font-weight: bold;
+            cursor: pointer;
+            line-height: 1;
+        }
+        .modal-close-button:hover,
+        .modal-close-button:focus {
+            color: #fff;
+            text-decoration: none;
+        }
+
+        .modal-content h3 {
+            margin-top: 0;
+            margin-bottom: 20px;
+            text-align: center;
+            color: #fff;
+        }
+
+        #stack-modal-list {
+            list-style: none;
+            padding: 0;
+            margin: 0 0 20px 0;
+            max-height: 200px; /* Limit height and make scrollable */
+            overflow-y: auto;
+            border: 1px solid #444; /* Add border around list */
+            border-radius: 4px;
+        }
+
+        #stack-modal-list li {
+            background-color: #3a3a3a; /* Slightly lighter item background */
+            padding: 10px 15px;
+            border-bottom: 1px solid #444;
+            display: flex; /* Use flexbox for alignment */
+            justify-content: space-between; /* Space out text and button */
+            align-items: center;
+            font-size: 14px;
+        }
+        #stack-modal-list li:last-child {
+            border-bottom: none;
+        }
+
+        .stack-item-remove-button {
+            background: none;
+            border: none;
+            color: #f07777; /* Reddish color */
+            font-size: 18px;
+            cursor: pointer;
+            padding: 0 5px;
+            line-height: 1;
+            margin-left: 10px;
+        }
+        .stack-item-remove-button:hover {
+            color: #ff4d4d;
+        }
+
+        .modal-actions {
+            display: flex;
+            justify-content: space-between; /* Space out buttons */
+            margin-top: 15px;
+        }
+
+        .modal-actions button {
+            padding: 10px 20px;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+            font-size: 14px;
+            font-weight: 500;
+            transition: background-color 0.2s ease;
+        }
+
+        #stack-modal-clear {
+            background-color: #666;
+            color: white;
+        }
+        #stack-modal-clear:hover {
+            background-color: #777;
+        }
+
+        #stack-modal-apply {
+            background-color: #4f8fef; /* Theme blue */
+            color: white;
+        }
+        #stack-modal-apply:hover {
+            background-color: #609eef;
+        }
+        .main
+        {
+            display: none;
+        }
+        .subscription
+        {
+            width: 350px;
+            display: none;
+            flex-direction: column;
+            gap: 13px;
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            transition: all 0.3s ease;
+            color: #888;
+            border: 1px solid #888;
+            padding: 11px;
+            border-radius: 6px;
+            text-transform: uppercase;
+            font-size: small;
+        }
+        .caution
+        {
+            width:16px;
+        }
+        .caution-container
+        {
+            display: flex;
+            flex-direction: row;            
+            gap:3px;
+        }
+        .licensePage
+        {
+            width: 300px;
+            display: none;
+            flex-direction: column;
+            gap: 13px;
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            transition: all 0.3s ease;
+            color: #888;
+            border: 1px solid #888;
+            padding: 11px;
+            border-radius: 6px;
+            text-transform: uppercase;
+            font-size: small;
+        }
+    </style>
+    <script src="CSInterface.js"></script>
+    <script src="PremiereActions.js"></script>
+    <script src="AEActions.js"></script>
+    <script src="AICommandProcessor.js"></script>
+</head>
+<body>
+    <!-- Logo -->
+    <div class="logo-container">
+        <div class="logo" id="app-title">Terminal</div>
+    </div>
+    <div class="licensePage" id="licensePage">
+        <div>License Key</div>
+        <input type="text" id="license" style="text-transform: uppercase;text-align: center;" placeholder="TERMXXXXXXXXXXXXXXXXTT">
+        <div style="display: flex;gap:10px;">
+            <input type="checkbox" id="license_check">
+            <span>I have purchased Terminal or have permission to use this license key.</span>
+        </div>
+        <button style="text-transform: uppercase;" onclick="HandleLicenseSubmit()">Submit</button>
+        <div style="color:red; text-align: center;" id="error_text"></div>
+    </div>
+    <div class="subscription" id="subscription">
+        <div class="caution-container">
+            <img class='caution' src = "../assets/caution.svg"/>
+            <div>Subscription Required</div>
+        </div>
+        <div>
+            Your EditLabs subscription could not be verified. This may be due to an expired credit card, a failed payment, or a canceled subscription.
+        </div>
+        <div>
+            To continue using this plugin, please check your payment details or reactivate your subscription.
+        </div>
+        <button onclick="openSubscriptionPage()">Manage Subscription</button>
+        <button onclick="openSubscriptionPage()">Retry Payment</button>
+    </div>
+    <div class="main" id="main">
+        <!-- Search -->
+        <div class="search-wrapper">
+            <div class="search-container">
+                <div class="search-icon">
+                    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                        <circle cx="11" cy="11" r="8"></circle>
+                        <line x1="21" y1="21" x2="16.65" y2="16.65"></line>
+                    </svg>
+                </div>
+                <input type="text" class="search-input" id="search-input" placeholder="Search" autocomplete="off">
+                <!-- New Stack Hover Wrapper -->
+                <div id="stack-hover-wrapper">
+                    <span id="stack-count"></span> <!-- Stack count display -->
+                    <div id="stack-tooltip">
+                        <!-- Content will be populated by JS -->
+                        <ul id="stack-tooltip-list"></ul>
+                        <div class="stack-tooltip-actions"></div>
+                    </div> 
+                </div>
+            </div>
+        </div>
+        
+        <!-- Results (initially hidden) -->
+        <div class="results-container" id="results-container">
+            <!-- Results will be populated dynamically -->
+        </div>
+
+        <!-- Settings View (initially hidden) -->
+        <div id="settings-view">
+            <button id="settings-close-button" title="Close Settings">&times;</button>
+            <h3>Settings</h3>
+
+            <!-- Add class 'shortcut-setting' for specific label centering -->
+            <div class="settings-item shortcut-setting"> 
+                <label>Launch Shortcut:</label>
+                <div class="shortcut-recorder"> 
+                <label class="shortcut-modifier-label"><input type="checkbox" id="shortcut-mod-cmdctrl"> <span id="cmdctrl-label">Cmd</span></label>
+                <label class="shortcut-modifier-label"><input type="checkbox" id="shortcut-mod-alt"> Alt</label>
+                <label class="shortcut-modifier-label"><input type="checkbox" id="shortcut-mod-shift"> Shift</label>
+                <input type="text" id="settings-shortcut-key-input" placeholder="KEY" maxlength="1">
+                </div>
+                <!-- Re-add the display div -->
+                <div id="settings-shortcut-display">Not Set</div> 
+            </div>
+
+            <!-- Add class 'inline-setting' for toggles -->
+            <div class="settings-item inline-setting"> 
+                <label for="settings-auto-close-toggle">Auto-close panel on success:</label>
+                <label class="toggle-switch">
+                    <input type="checkbox" id="settings-auto-close-toggle">
+                    <span class="toggle-slider"></span>
+                </label>
+            </div>
+
+            <!-- Add class 'inline-setting' for toggles -->
+            <div class="settings-item inline-setting"> 
+                <label for="settings-favorites-only-toggle">Show only favorites:</label>
+                <label class="toggle-switch">
+                    <input type="checkbox" id="settings-favorites-only-toggle">
+                    <span class="toggle-slider"></span>
+                </label>
+            </div>
+
+            <!-- Add class 'inline-setting' for trigger key -->
+            <div class="settings-item inline-setting"> 
+                <label for="settings-favorites-trigger">Show only favorites trigger key:</label>
+                <input type="text" id="settings-favorites-trigger" maxlength="1" style="width: 40px;"> 
+            </div>
+            <!-- End Restored Settings -->
+        </div>
+        
+        <!-- Bottom Toolbar -->
+        <div class="toolbar">
+            <div class="toolbar-item">support</div>
+            <div class="toolbar-item">settings</div>
+            <div class="toolbar-item">store</div>
+        </div>
+    </div>
+    
+
+    <script>
+        var terminal = {};
+        terminal.author = "tinytapes"
+        terminal.name = "Surveillance";
+        terminal.licensedOffline = false;
+        terminal.licensedOnline = false;
+        terminal.footagePage = 1;
+        terminal.curLook = 1;
+        terminal.curOverlay = 1;
+        terminal.curTransition = 1;
+        terminal.trackers = [];
+        terminal.faceTrackers = [];
+        terminal.bodyTrackers = [];
+        terminal.grid = 1;
+        terminal.launched = false;
+        terminal.trackerType = 1;
+        terminal.trackerTypes = ["Corners","Corners & Crosshair","Full","Full & Crosshair"];
+        terminal.licenseKeyListToken = "zq2tC1i2Pvr8HwfTj51aKXa5w6vGwctpUfUR";
+        terminal.licenseAPIKey='';
+        terminal.licenseSecretKey='';
+        terminal.activateUrl = "";
+        terminal.validdateUrl = "";
+        terminal.deactivateUrl = "";
+        terminal.csi = new CSInterface();
+        terminal.storedFavorites={};
+        terminal.preset={};
+        terminal.effect={};
+        terminal.transition={};
+        terminal.requestOptions = {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+            },
+        };
+
+        terminal.csi.addEventListener("com.tinytapes.terminal.worker", function(e) 
+        {
+
+            if(e.extensionId=="com.example.terminal.worker")
+            {
+                if(e.data.message=="LoadFavorites")
+                {
+                    terminal.storedFavorites = e.data.value;
+                    terminal.preset=e.data.preset;
+                    terminal.effect = e.data.effect;
+                    terminal.transition = e.data.transition;
+                }
+            }
+        });
+
+        terminal.csi.evalScript("getRestAPIPoint()",function(res) {  
+            var data = JSON.parse(res);
+            terminal.licenseAPIKey=data.licenseAPIKey;
+            terminal.licenseSecretKey=data.licenseSecretKey;
+            terminal.activateUrl = data.activateUrl;
+            terminal.validdateUrl = data.validdateUrl;
+            terminal.deactivateUrl = data.deactivateUrl;
+            });
+        const crypt = (salt, text) => {
+                const textToChars = (text) => text.split("").map((c) => c.charCodeAt(0));
+                const byteHex = (n) => ("0" + Number(n).toString(16)).substr(-2);
+                const applySaltToChar = (code) => textToChars(salt).reduce((a, b) => a ^ b, code);
+                return text
+                .split("")
+                .map(textToChars)
+                .map(applySaltToChar)
+                .map(byteHex)
+                .join("");
+            };
+
+        const decrypt = (salt, encoded) => {
+                const textToChars = (text) => text.split("").map((c) => c.charCodeAt(0));
+                const applySaltToChar = (code) => textToChars(salt).reduce((a, b) => a ^ b, code);
+                return encoded
+                .match(/.{1,2}/g)
+                .map((hex) => parseInt(hex, 16))
+                .map(applySaltToChar)
+                .map((charCode) => String.fromCharCode(charCode))
+                .join("");
+            };
+        
+        function openSubscriptionPage()
+        {
+            const csi = new CSInterface(); 
+            csi.openURLInDefaultBrowser("https://aligno-landing.vercel.app/subscription");
+        }
+        function daysToMilliseconds(days) {
+		return days * 24 * 60 * 60 * 1000;
+        }
+
+        function millisecondsToDays(milliseconds) {
+            return milliseconds / 1000 / 60 / 60 / 24;
+        }
+        function hoursToMilliseconds(hrs) {
+		return hrs * 60 * 60 * 1000;
+        }
+
+        function millisecondsToHours(milliseconds) {
+            return milliseconds / 1000 / 60 / 60;
+        }
+        function validateLicenseKey(licenseKey,increment) 
+        {
+            if (licenseKey.match(/^(TERM)[A-Z0-9]{16}(TT)$/) === null)
+            {
+                handleError(506);
+                return;
+            }
+            var url = increment ? terminal.activateUrl:terminal.validdateUrl;
+            url += licenseKey;
+
+            const username = terminal.licenseAPIKey;
+            const password = terminal.licenseSecretKey;
+
+            // Encode the username and password to Base64
+            const basicAuth = btoa(`${username}:${password}`);
+
+            fetch(url, {
+            method: 'GET', // or 'POST', 'PUT', etc.
+            headers: {
+                'Authorization': `Basic ${basicAuth}`,
+                'Content-Type': 'application/json'
+            }
+            })
+            .then(response => {
+                return response.json();
+            })
+            .then(data => {
+                var data = data.data;
+                var email = "test@gmail.com";
+                var encryptedLicenseKey = crypt(terminal.author,licenseKey);
+                terminal.csi.evalScript("ParseServerData('" + JSON.stringify(data) + "','"+ encryptedLicenseKey + "','" + email + "')", function(res) {
+                    var err=parseInt(res);
+                    if(err==0) GoMainPage();
+                    else handleError(err);
+                });
+            })
+            .catch(error => {
+                if (error.message && error.message === 'Network Error')
+                {
+                    if (terminal.licensedOffline) {
+                        terminal.csi.evalScript("getLicenseInfo()",function(res){
+                            var email = JSON.parse(res).email;
+                            var prevDate = JSON.parse(res).date;
+                            var now = Date.now();
+                            var delta = now - prevDate;
+                            if (delta > daysToMilliseconds(5)) {
+                                terminal.licensedOffline = false;
+                                terminal.licensedOnline = false;
+                                handleError(504);
+                                return;
+                            } else {
+                                GoMainPage(); 
+                                return;
+                            }
+                        });
+                    } else {
+                        terminal.licensedOffline = false;
+                        terminal.licensedOnline = false;
+                        handleError(503);
+                        return;
+                    }
+                }
+                else
+                {
+                    if (terminal.licensedOffline) {
+                        // alert("Invalid license key — removing offline license file");
+                        terminal.licensedOffline = false;
+                        terminal.licensedOnline = false;
+                        terminal.csi.evalScript("removeOfflineLicense()");
+                    }
+                    terminal.licensedOffline = false;
+                    terminal.licensedOnline = false;
+                    terminal.csi.evalScript("newAlert('" + error + "')");
+                    return;
+                }
+            });
+        }
+        function checkOfflineLicense() 
+        {   
+            terminal.csi.evalScript("checkOfflineLicense()", function(res) {
+                if (res !== "not found") 
+                {
+                    // alert("Found offline license file. Attempting to validate online.");
+                    terminal.licenseKey = decrypt(terminal.author,res);
+                    if (terminal.licenseKey.match(/^(TERM)[A-Z0-9]{16}(TT)$/) !== null) {
+                        terminal.licensedOffline = true;
+
+                        terminal.csi.evalScript("getLicenseInfo()",function(res){
+                            var email = JSON.parse(res).email;
+                            var prevDate = JSON.parse(res).date;
+                            var now = Date.now();
+                            var delta = now - prevDate;
+                            if (delta > hoursToMilliseconds(5)) {                               
+                                validateLicenseKey(terminal.licenseKey,false);
+                                
+                            } else {
+                                GoMainPage(); 
+                            }
+                        });
+                       
+                    } else {
+                        // alert("Offline license file is invalid — removing file.");
+                        terminal.csi.evalScript("removeOfflineLicense()");
+                        handleError(0);
+                    }
+                }
+                else
+                {
+                    handleError(0);
+                }
+            });
+        }
+        function handleError(err_code)
+        {
+            var err="";
+            switch(err_code)
+            {
+                case 500:
+                    err="Error verifying offline license. Please contact support.";
+                    break;
+                case 501:
+                    err="License key is found, but not valid.";
+                    break;
+                case 502:
+                    err="License key not found.";
+                    break;
+                case 503:
+                    err="Network error. Check your internet connection.";
+                    break;
+                case 504:
+                    err="Offline period exceeded. Connect to the internet to verify your license.";
+                    break;
+                case 505:
+                    err="Enter license key.";
+                    break;
+                case 506:
+                    err="Invalid license key format.";
+                    break;
+                case 507:
+                    err = "You must confirm your purchase by checking the box.";
+                    break;
+                case 508:
+                    err="License file has been tampered with. Please verify again.";
+                    break;
+                case 509: 
+                    err="Maximum number of activations reached. Pressing submit will replace a previous activation.";                   
+                    break;
+                case 510:      
+                    err="[plugin] is unlicensed. Please verify again.";              
+                    break;
+                case 511: 
+                    err="Unknown error verifying license. Please contact support.";                   
+                    break;
+            }
+            document.getElementById("error_text").textContent = err;
+            document.getElementById('licensePage').style.display = "flex";
+        }
+        function sanitizeLicense(licenseKey)
+        {
+            if (licenseKey=="") return "";
+            return licenseKey.normalize("NFKC") // normalize different Unicode forms
+                            .replace(/[\u200B-\u200D\uFEFF]/g, "") // strip zero-width chars
+                            .replace(/\s+/g, "") // remove all spaces/newlines
+                            .trim()
+                            .toUpperCase(); // optional: force uppercase
+        }
+        function HandleLicenseSubmit()
+        {
+            document.getElementById("error_text").textContent = "";
+
+            if(document.getElementById("license_check").checked==false)
+            {
+                handleError(507);
+                return;
+            }
+            const licenseKey = sanitizeLicense(document.getElementById("license").value);
+            validateLicenseKey(licenseKey,true);
+        }
+        function GoMainPage()
+        {
+            document.getElementById('main').style.display = "flex";
+            document.getElementById('licensePage').style.display = "none";
+            MainPageLoad();
+        }
+        function getProductKey()
+        {
+            const csi = new CSInterface(); 
+            const isMac = csi.getOSInformation().toLowerCase().includes('mac');
+            var userDataDir = csi.getSystemPath(SystemPath.USER_DATA);
+
+            csi.evalScript("findEncodedProductKey("+JSON.stringify(isMac)+","+JSON.stringify(userDataDir)+")", (token) => {
+
+                const tokenPayload = JSON.parse(atob(token));
+                var productKey= tokenPayload.userId.productKey;
+                var enc_url ='6c7070743e2b2b61606d70686566772934313433353c313566313d332a6c61766b6f716574742a676b692b65746d2b7771667767766d74706d6b6a2b7265686d606570612974766b60716770296f617d';
+    
+                var url = decrypt("terminal",enc_url);
+                    console.log(url);
+                    console.log(productKey);
+                    const postData = {
+                        productKey: productKey
+                    };
+                    const jsonString = JSON.stringify(postData);   
+                    
+                    fetch(url, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body:jsonString
+                    })
+                    .then(response => {
+                        return response.json();
+                    })
+                    .then(data => {
+                        var expirationTime = new Date(data.expiresAt);
+                        const now = new Date();
+                        if (expirationTime > now) 
+                        {
+                            document.getElementById('main').style.display = "flex";
+                            document.getElementById('subscription').style.display = "none";
+                            MainPageLoad();
+                            return;
+                        }
+                        else
+                        {
+                            document.getElementById('subscription').style.display = "flex";
+                            document.getElementById('main').style.display = "none";
+                        }
+                    })
+                    .catch(error => {
+                        document.getElementById('subscription').style.display = "flex";
+                        document.getElementById('main').style.display = "none";
+                    });         
+            });
+        }
+        function MainPageLoad()
+        {
+            const searchInput = document.getElementById('search-input');
+            const body = document.body;
+            const resultsContainer = document.getElementById('results-container');
+            const stackCountElement = document.getElementById('stack-count'); // Get stack count element
+            const stackManageButton = document.getElementById('stack-manage-button'); // Get manage button
+            const stackTooltipElement = document.getElementById('stack-tooltip'); // Get stack tooltip element
+            const stackTooltipList = document.getElementById('stack-tooltip-list'); // List inside tooltip
+            const stackTooltipActions = stackTooltipElement.querySelector('.stack-tooltip-actions'); // Actions div inside tooltip
+            
+            // Removed Modal elements
+
+            let selectedItemIndex = -1;
+            let filteredItems = [];
+            let aiCommandProcessor = new AICommandProcessor(terminal.preset,terminal.effect,terminal.transition);
+            let processingCommand = false;
+            let effectStack = []; // Initialize the effect stack
+            let favorites = []; // Initialize favorites array
+            let commandHistory = [];
+            let historyIndex = -1;
+            let pendingParameterContext = null; // NEW: State for two-step parameter input
+            
+            // Initialize cache check for populating itemsList
+            const cacheCheckInterval = setInterval(() => {
+                if (aiCommandProcessor && aiCommandProcessor.effectsCache && aiCommandProcessor.effectsCache.length > 0) {
+
+                    clearInterval(cacheCheckInterval);
+                    
+                    // Once cache is ready, populate the itemsList
+                    populateItemsList();
+                    console.log('Cache initialized and itemsList populated');
+                    
+                    // Optionally: refresh the search results if currently searching
+                    if (searchInput.value) {
+                        populateResults(searchInput.value);
+                    }
+                }
+            }, 100);
+            
+            // Settings variables
+            let showFavoritesOnly = false;
+            let favoritesTriggerKey = '*';
+            let launchShortcut = null; 
+            let autoCloseOnSuccess = true; // Default value
+            
+            // DOM Elements for Settings
+            const settingsView = document.getElementById('settings-view');
+            const settingsCloseButton = document.getElementById('settings-close-button');
+            const favoritesOnlyToggle = document.getElementById('settings-favorites-only-toggle');
+            const autoCloseToggle = document.getElementById('settings-auto-close-toggle');
+            const favoritesTriggerInput = document.getElementById('settings-favorites-trigger');
+            const shortcutDisplay = document.getElementById('settings-shortcut-display'); // Re-added reference
+            const shortcutModCmdCtrl = document.getElementById('shortcut-mod-cmdctrl');
+            const shortcutModAlt = document.getElementById('shortcut-mod-alt');
+            const shortcutModShift = document.getElementById('shortcut-mod-shift');
+            const shortcutKeyInput = document.getElementById('settings-shortcut-key-input');
+            const cmdCtrlLabel = document.getElementById('cmdctrl-label');
+            const mainSearchWrapper = document.querySelector('.search-wrapper'); // Need to hide this
+            const resultsContainerElement = document.getElementById('results-container'); // Need to hide this
+            const logoContainer = document.querySelector('.logo-container'); // Need to hide this
+            const toolbar = document.querySelector('.toolbar'); // Need to hide this
+            
+            // Toggle between AI mode and normal search mode
+            let aiMode = true; // Start in AI mode by default
+            const searchModes = {
+                AI: 'Ask AI',
+                SEARCH: 'Search'
+            };
+            let currentSearchMode = searchModes.AI;
+            
+            // Update placeholder to reflect current mode
+            function updatePlaceholder() {
+                searchInput.placeholder = currentSearchMode;
+            }
+            
+            // Toggle search mode
+            function toggleSearchMode() {
+                aiMode = !aiMode;
+                currentSearchMode = aiMode ? searchModes.AI : searchModes.SEARCH;
+                updatePlaceholder();
+                
+                // Clear results when toggling
+                searchInput.value = '';
+                resultsContainer.innerHTML = '';
+                body.classList.remove('typing');
+            }
+            
+            // Call this initially to set the right placeholder
+            updatePlaceholder();
+            loadFavorites(); // Load favorites on startup
+            const SETTINGS_FILE_NAME = "terminal_settings.json";
+            loadSettings(); // Load settings on startup
+            
+            // Set Cmd/Ctrl label based on OS
+            cmdCtrlLabel.textContent = navigator.platform.toUpperCase().indexOf('MAC') >= 0 ? 'Cmd' : 'Ctrl';
+            
+            // --- Settings Functions --- Start ---
+            
+            // Function to get the settings file path asynchronously
+            function getSettingsFilePath() {
+                return new Promise((resolve, reject) => {
+                    const csInterface = new CSInterface();
+                    const userDataPath = csInterface.getSystemPath(SystemPath.USER_DATA);
+                    if (!userDataPath) {
+                        reject("Could not get user data path.");
+                        return;
+                    }
+                    const fullPath = userDataPath + "/" + SETTINGS_FILE_NAME;
+                    console.log("Resolved settings file path:", fullPath);
+                    resolve(fullPath);
+                });
+            }
+            
+            function formatShortcut(shortcut) {
+                if (!shortcut || !shortcut.key) return "Not Set";
+                let parts = [];
+                if (shortcut.metaKey) parts.push(navigator.platform.toUpperCase().indexOf('MAC') >= 0 ? 'Cmd' : 'Win');
+                if (shortcut.ctrlKey) parts.push('Ctrl');
+                if (shortcut.altKey) parts.push('Alt');
+                if (shortcut.shiftKey) parts.push('Shift');
+                
+                // Basic key display (can be improved for special keys)
+                let displayKey = shortcut.key.toUpperCase();
+                if (displayKey.startsWith('KEY')) displayKey = displayKey.substring(3);
+                if (displayKey.startsWith('DIGIT')) displayKey = displayKey.substring(5);
+                if (displayKey === 'BACKQUOTE') displayKey = '`';
+                if (displayKey === 'MINUS') displayKey = '-';
+                if (displayKey === 'EQUAL') displayKey = '=';
+                 if (displayKey === 'BRACKETLEFT') displayKey = '[';
+                 if (displayKey === 'BRACKETRIGHT') displayKey = ']';
+                 if (displayKey === 'BACKSLASH') displayKey = '\\';
+                 if (displayKey === 'SEMICOLON') displayKey = ';';
+                 if (displayKey === 'QUOTE') displayKey = '\'';
+                 if (displayKey === 'COMMA') displayKey = ',';
+                 if (displayKey === 'PERIOD') displayKey = '.';
+                 if (displayKey === 'SLASH') displayKey = '/';
+                 if (displayKey === 'SPACE') displayKey = 'Space';
+                
+                parts.push(displayKey);
+                return parts.join(' + ');
+            }
+
+            async function loadSettings() {
+                let settings = { // Defaults
+                    showFavoritesOnly: false,
+                    favoritesTriggerKey: '*',
+                    launchShortcut: null, 
+                    autoCloseOnSuccess: true // Default value here too
+                };
+                
+                try {
+                    const filePath = await getSettingsFilePath();
+                    const readFileResult = window.cep.fs.readFile(filePath);
+
+                    if (readFileResult.err === 0) {
+                        try {
+                            const loadedSettings = JSON.parse(readFileResult.data);
+                            // Merge loaded settings with defaults to ensure all keys exist
+                            settings = { ...settings, ...loadedSettings };
+                            console.log("Loaded settings from file:", settings);
+                        } catch (parseError) {
+                            console.error("Error parsing settings file:", parseError, "Using defaults.");
+                        }
+                    } else if (readFileResult.err !== window.cep.fs.ERR_FILENOTFOUND) {
+                        // Log errors other than file not found
+                        console.error("Error reading settings file:", readFileResult.err, "Using defaults.");
+                    } else {
+                        console.log("Settings file not found, using defaults.");
+                    }
+                } catch (pathError) {
+                     console.error("Error getting settings file path:", pathError, "Using defaults.");
+                }
+                
+                // Apply settings to variables and UI
+                showFavoritesOnly = !!settings.showFavoritesOnly; // Ensure boolean
+                favoritesOnlyToggle.checked = showFavoritesOnly;
+
+                favoritesTriggerKey = settings.favoritesTriggerKey || '*';
+                favoritesTriggerInput.value = favoritesTriggerKey;
+
+                autoCloseOnSuccess = !!settings.autoCloseOnSuccess; // Ensure boolean
+                autoCloseToggle.checked = autoCloseOnSuccess;
+
+                launchShortcut = settings.launchShortcut; // Keep as object or null
+                
+                if (launchShortcut) {
+                    const isMac = navigator.platform.toUpperCase().indexOf('MAC') >= 0;
+                    // Set checked state for checkboxes
+                    shortcutModCmdCtrl.checked = isMac ? launchShortcut.metaKey : launchShortcut.ctrlKey;
+                    shortcutModAlt.checked = launchShortcut.altKey;
+                    shortcutModShift.checked = launchShortcut.shiftKey;
+                    
+                    // Attempt to reverse map key code to displayable input character
+                    let displayKey = launchShortcut.key;
+                    if(displayKey.startsWith('Key')) displayKey = displayKey.substring(3);
+                    else if(displayKey.startsWith('Digit')) displayKey = displayKey.substring(5);
+                    else { // Handle special characters based on mapInputToKeyCode logic
+                        switch(displayKey) {
+                            case 'Backquote': displayKey = '`'; break;
+                            case 'Minus': displayKey = '-'; break;
+                            case 'Equal': displayKey = '='; break;
+                            case 'BracketLeft': displayKey = '['; break;
+                            case 'BracketRight': displayKey = ']'; break;
+                            case 'Backslash': displayKey = '\\'; break;
+                            case 'Semicolon': displayKey = ';'; break;
+                            case 'Quote': displayKey = '\''; break;
+                            case 'Comma': displayKey = ','; break;
+                            case 'Period': displayKey = '.'; break;
+                            case 'Slash': displayKey = '/'; break;
+                            case 'Space': displayKey = ' '; break;
+                            // Add more reverse mappings if needed
+                        }
+                    }
+                    shortcutKeyInput.value = displayKey.toUpperCase(); // Show uppercase in input
+                } else {
+                    // Reset UI if no valid shortcut loaded
+                    // Uncheck all modifier checkboxes
+                    shortcutModCmdCtrl.checked = false;
+                    shortcutModAlt.checked = false;
+                    shortcutModShift.checked = false;
+                    shortcutKeyInput.value = '';
+                }
+                // Ensure shortcutDisplay exists before setting text content
+                if (shortcutDisplay) {
+                   shortcutDisplay.textContent = formatShortcut(launchShortcut);
+                }
+
+                // Add event listeners for settings changes
+                const csInterface = new CSInterface(); // Keep instance for listeners
+                favoritesOnlyToggle.addEventListener('change', function() {
+                    showFavoritesOnly = this.checked;
+                    saveSetting('showFavoritesOnly', showFavoritesOnly);
+                    // Re-populate results when the checkbox is toggled
+                    populateResults(searchInput.value); 
+                });
+
+                favoritesTriggerInput.addEventListener('input', function() {
+                    // Ensure only one character, default to * if empty
+                    let newKey = this.value.trim().slice(0, 1);
+                    if (newKey === '') {
+                        newKey = '*';
+                    } 
+                    this.value = newKey; // Update input visually
+                    favoritesTriggerKey = newKey;
+                    saveSetting('favoritesTriggerKey', favoritesTriggerKey);
+                });
+                
+                // Add listeners for the new shortcut UI elements
+                shortcutModCmdCtrl.addEventListener('change', updateShortcutFromUI);
+                shortcutModAlt.addEventListener('change', updateShortcutFromUI);
+                shortcutModShift.addEventListener('change', updateShortcutFromUI);
+                shortcutKeyInput.addEventListener('input', updateShortcutFromUI);
+                shortcutKeyInput.addEventListener('keydown', (e) => { 
+                    // Prevent typing more than one char, allow Backspace/Delete
+                    if (e.target.value.length >= 1 && !['Backspace', 'Delete', 'ArrowLeft', 'ArrowRight', 'Tab'].includes(e.key)) { 
+                        e.preventDefault(); 
+                    } 
+                });
+                shortcutKeyInput.addEventListener('keyup', (e) => { 
+                    // Force uppercase display
+                    e.target.value = e.target.value.toUpperCase(); 
+                });
+
+                // Add listener for the new auto-close toggle
+                autoCloseToggle.addEventListener('change', function() {
+                    autoCloseOnSuccess = this.checked;
+                    saveSetting('autoCloseOnSuccess', autoCloseOnSuccess);
+                });
+            }
+
+            // New function to update shortcut based on UI state
+            function updateShortcutFromUI() {
+                const keyInputValue = shortcutKeyInput.value.trim();
+                const keyCode = mapInputToKeyCode(keyInputValue);
+                
+                if (!keyCode) { // If key is invalid or empty, potentially clear shortcut or keep previous?
+                    launchShortcut = null; // Let's clear it if the key is invalid/empty
+                } else {
+                    const isMac = navigator.platform.toUpperCase().indexOf('MAC') >= 0;
+                    // Read modifier checkbox states
+                    const modCmdCtrl = shortcutModCmdCtrl.checked;
+                    const modAlt = shortcutModAlt.checked;
+                    const modShift = shortcutModShift.checked;
+                    
+                    launchShortcut = {
+                        ctrlKey: !isMac && modCmdCtrl,
+                        altKey: modAlt,
+                        shiftKey: modShift,
+                        metaKey: isMac && modCmdCtrl,
+                        key: keyCode
+                    };
+                }
+                
+                // Update the display, ensuring the element exists
+                if (shortcutDisplay) {
+                   shortcutDisplay.textContent = formatShortcut(launchShortcut);
+                }
+                saveSetting('launchShortcut', launchShortcut);
+                
+                // Dispatch event to notify the worker
+                try {
+                    const csInterface = new CSInterface();
+                    const event = new CSEvent("com.example.terminal.shortcutUpdate", "APPLICATION", "ILST", "TerminalShortcutUpdate");
+                    event.data = JSON.stringify(launchShortcut); 
+                    csInterface.dispatchEvent(event);
+                    console.log("Dispatched shortcut update event:", launchShortcut);
+                } catch (e) {
+                    console.error("Error dispatching shortcut update event:", e);
+                }
+            }
+
+            // Helper function to save a specific setting to the file
+            async function saveSetting(key, value) {
+                let settings = { // Start with current state or defaults
+                    showFavoritesOnly: showFavoritesOnly,
+                    favoritesTriggerKey: favoritesTriggerKey,
+                    launchShortcut: launchShortcut,
+                    autoCloseOnSuccess: autoCloseOnSuccess // Include in save state
+                };
+
+                try {
+                    const filePath = await getSettingsFilePath();
+                    // Read current file first to preserve other settings
+                    const readFileResult = window.cep.fs.readFile(filePath);
+                    if (readFileResult.err === 0) {
+                        try {
+                            const loadedSettings = JSON.parse(readFileResult.data);
+                            settings = { ...settings, ...loadedSettings }; // Merge
+                        } catch (parseError) {
+                            console.error("Error parsing existing settings before save:", parseError);
+                            // Proceed with potentially overwriting with current state
+                        }
+                    }
+
+                    // Update the specific key
+                    settings[key] = value;
+
+                    // Write the entire object back
+                    const writeFileResult = window.cep.fs.writeFile(filePath, JSON.stringify(settings, null, 2)); // Pretty print JSON
+                    if (writeFileResult.err === 0) {
+                        console.log(`Saved setting '${key}' to file.`);
+                    } else {
+                        console.error(`Error writing settings file:`, writeFileResult.err);
+                    }
+                } catch (error) {
+                     console.error("Error saving setting:", error);
+                }
+            }
+
+            // Simple mapping for common keys to event.code format
+            function mapInputToKeyCode(keyInput) {
+                const keyUpper = keyInput.toUpperCase();
+                if (keyUpper >= 'A' && keyUpper <= 'Z') {
+                    return `Key${keyUpper}`;
+                } else if (keyUpper >= '0' && keyUpper <= '9') {
+                    return `Digit${keyUpper}`;
+                }
+                // Add other common keys if needed
+                switch(keyUpper) {
+                    case '`': return 'Backquote';
+                    case '-': return 'Minus';
+                    case '=': return 'Equal';
+                    case '[': return 'BracketLeft';
+                    case ']': return 'BracketRight';
+                    case '\\': return 'Backslash'; // Need to escape backslash
+                    case ';': return 'Semicolon';
+                    case '\'': return 'Quote'; // Need to escape quote
+                    case ',': return 'Comma';
+                    case '.': return 'Period';
+                    case '/': return 'Slash';
+                    case ' ': return 'Space';
+                    // Add mappings for F-keys, arrows, etc. if desired
+                    default: return null; // Or return keyInput if worker can handle it?
+                }
+            }
+
+            // Update Stack Count UI and Tooltip / Manage Button Visibility
+            function updateStackCountUI() {
+                 const tooltipList = document.getElementById('stack-tooltip-list');
+                 const tooltipActions = document.querySelector('#stack-tooltip .stack-tooltip-actions');
+                 tooltipList.innerHTML = ''; // Clear previous list items
+                 tooltipActions.innerHTML = ''; // Clear previous actions
+
+                if (effectStack.length > 0) {
+                    stackCountElement.textContent = `Stack: ${effectStack.length}`;
+                    stackCountElement.classList.add('visible');
+                    // stackManageButton.style.display = 'inline-block'; // Removed manage button
+                    
+                    // Populate tooltip panel
+                    effectStack.forEach((command, index) => {
+                        const li = document.createElement('li');
+                        
+                        const commandSpan = document.createElement('span');
+                         // Basic sanitization/escaping for display in HTML
+                        commandSpan.textContent = command; // Display command text
+                        li.appendChild(commandSpan);
+
+                        const removeButton = document.createElement('button');
+                        removeButton.innerHTML = '&times;'; // Use multiplication sign for 'x'
+                        removeButton.className = 'stack-item-remove-button';
+                        removeButton.title = 'Remove command';
+                        removeButton.onclick = (e) => {
+                            e.stopPropagation(); // Prevent tooltip from hiding if interaction is needed
+                            removeCommandFromStack(index);
+                        };
+                        li.appendChild(removeButton);
+
+                        tooltipList.appendChild(li);
+                    });
+                    
+                     // Add Action Buttons to tooltip
+                     const clearButton = document.createElement('button');
+                     clearButton.textContent = 'Clear Stack';
+                     clearButton.id = 'stack-tooltip-clear'; // Use ID for styling
+                     clearButton.onclick = (e) => {
+                          e.stopPropagation();
+                          clearStack();
+                     };
+                     tooltipActions.appendChild(clearButton);
+                     
+                     const applyButton = document.createElement('button');
+                     applyButton.textContent = 'Apply Stack';
+                     applyButton.id = 'stack-tooltip-apply'; // Use ID for styling
+                     applyButton.onclick = (e) => {
+                          e.stopPropagation();
+                          // Hide tooltip manually before applying if desired
+                          // stackTooltipElement.style.display = 'none'; 
+                          applyEffectStack();
+                     };
+                     tooltipActions.appendChild(applyButton);
+                    
+                } else {
+                    stackCountElement.classList.remove('visible');
+                    // stackManageButton.style.display = 'none'; // Removed manage button
+                    // No need to clear tooltip HTML here, it's done at the start of the function
+                    // stackModal.style.display = 'none'; // Removed modal
+                }
+            }
+
+            // --- Stack Modal Functions --- Start ---
+            // Removed openStackModal, closeStackModal
+
+            function populateStackModalList() {
+                 // This function is no longer needed as list is populated in updateStackCountUI
+                 console.warn("populateStackModalList called but is deprecated.");
+            }
+
+            function removeCommandFromStack(indexToRemove) {
+                if (indexToRemove >= 0 && indexToRemove < effectStack.length) {
+                    effectStack.splice(indexToRemove, 1); // Remove item from stack array
+                    updateStackCountUI(); // Update counter and button visibility
+                    populateStackModalList(); // Refresh modal list
+                }
+            }
+
+            function clearStack() {
+                effectStack = [];
+                updateStackCountUI();
+                populateStackModalList(); // Refresh modal list (will show empty message)
+                 // Optionally close modal after clearing? Or keep it open?
+                // closeStackModal(); 
+            }
+
+            // --- Stack Modal Functions --- End ---
+            
+            // REMOVED: Hardcoded list of effects and transitions
+            // Instead of a hardcoded list, we'll use the effects and transitions from the aiCommandProcessor's cache
+            let itemsList = [];
+            
+            // Populate itemsList from the cached effects and transitions when the extension loads
+            function populateItemsList() {
+                itemsList = [];
+                
+                // Add effects from cache
+                if (aiCommandProcessor && aiCommandProcessor.effectsCache) {
+                    aiCommandProcessor.effectsCache.forEach(effectName => {
+                        // Skip category headers (they start with "---")
+                        if (!effectName.startsWith("---")) {
+                            itemsList.push({
+                                name: effectName,
+                                category: "Effect",
+                                type: "effect"
+                            });
+                        }
+                    });
+                }
+                
+                // Add transitions from cache - only if not in After Effects
+                if (aiCommandProcessor && 
+                    aiCommandProcessor.transitionsCache && 
+                    aiCommandProcessor.hostAppName !== 'AEFT') {
+                    aiCommandProcessor.transitionsCache.forEach(transitionName => {
+                        itemsList.push({
+                            name: transitionName,
+                            category: "Transition",
+                            type: "transition"
+                        });
+                    });
+                }
+                
+                //Add presets from cache
+                if (aiCommandProcessor && 
+                    aiCommandProcessor.presetsCache) {
+                    aiCommandProcessor.presetsCache.forEach(presetName => {
+                        itemsList.push({
+                            name: presetName,
+                            category: "Preset",
+                            type: "preset"
+                        });
+                    });
+                }
+                console.log(`Populated itemsList with ${itemsList.length} items from host application cache`);
+            }
+            
+            // Call this function after aiCommandProcessor is initialized
+            setTimeout(populateItemsList, 500); // Allow time for effects cache to be populated
+            
+            // Load the Adobe CEP library
+            function loadJSX(fileName) {
+                const extensionRoot = window.__adobe_cep__ ? window.__adobe_cep__.getSystemPath('extension') : '';
+                return `${extensionRoot}/${fileName}`;
+            }
+            
+            // Display AI command response
+            function displayAIResponse(response) {
+                resultsContainer.innerHTML = '';
+                
+                const resultItem = document.createElement('div');
+                resultItem.className = 'result-item ai-response';
+                
+                // AI icon (using a robot-like icon)
+                const iconSvg = `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                    <rect x="3" y="11" width="18" height="10" rx="2" />
+                    <circle cx="12" cy="5" r="2" />
+                    <path d="M12 7v4" />
+                    <line x1="8" y1="16" x2="8" y2="16" />
+                    <line x1="16" y1="16" x2="16" y2="16" />
+                </svg>`;
+                
+                resultItem.innerHTML = `
+                    <div class="result-icon">
+                        ${iconSvg}
+                    </div>
+                    <div class="result-title">${response}</div>
+                    <div class="result-category">AI</div>
+                `;
+                
+                resultsContainer.appendChild(resultItem);
+                processingCommand = false;
+            }
+            
+            // Process AI command
+            async function processAICommand(text) {
+
+                if (processingCommand) return;
+                
+                processingCommand = true;
+                
+                // First, show a "thinking" response
+                displayAIResponse("Processing your request...");
+                
+                // Add a timeout to prevent UI hanging if command processing takes too long
+                const commandTimeout = setTimeout(() => {
+                    if (processingCommand && document.querySelector('.ai-response .result-title').textContent.includes('Processing')) {
+                        console.log('Command timeout triggered - clearing "Processing" state');
+                        displayAIResponse("Command completed silently. Try again if needed.");
+                        processingCommand = false;
+                    }
+                }, 4000); // 4 second timeout for any command
+                
+                try {
+                    // Process the command with AI
+                    const response = await aiCommandProcessor.processCommand(text);
+      
+                    // Command completed, clear timeout
+                    clearTimeout(commandTimeout);
+                    
+                    // Log the raw response
+                    console.log("[processAICommand] Raw response received:", response);
+                    
+                    // NEW: Check for parameter prompt format
+                    const PARAM_PROMPT_PREFIX = "PARAM_PROMPT:";
+                    if (typeof response === 'string' && response.startsWith(PARAM_PROMPT_PREFIX)) {
+                        const parts = response.substring(PARAM_PROMPT_PREFIX.length).split(':');
+                        const context = parts[0];
+                        const message = parts.slice(1).join(':'); // Re-join if message contains colons
+                        
+                        pendingParameterContext = context; // Store the command context
+                        displayAIResponse(message);      // Display the prompt message
+                        searchInput.value = '';          // Clear input for the value
+                        searchInput.focus();
+                        console.log("[processAICommand] Parameter prompt detected. Context:", context, "Message:", message);
+                        // Keep processingCommand = true, as we are still mid-command
+                        return;                        // Stop further processing here
+                    }
+                    
+                    // Check if the response indicates a value is needed (older system, maybe remove later)
+                    const needsValueMarker = "NEEDS_VALUE_MARKER:";
+                    if (typeof response === 'string' && response.startsWith(needsValueMarker)) {
+                        const actualResponse = response.substring(needsValueMarker.length);
+                        displayAIResponse(actualResponse); // Show the guidance message
+                        // Do NOT reset UI automatically, let the keydown handler manage it
+                        processingCommand = false; // Allow further input for this older system
+                        searchInput.value += ' '; // Add a space for the value
+                        searchInput.focus(); // Keep focus
+                        return; // Stop further processing here
+                    }
+                    
+                    // NEW: Check if the response is a parameter prompt
+                    const isParameterPrompt = response.startsWith("Enter value for");
+                    
+                    // Handle parameter prompts separately
+                    if (isParameterPrompt) {
+                        displayAIResponse(response);
+                        searchInput.value = ''; // Clear the input for the next value
+                        searchInput.focus();
+                        processingCommand = false; // Allow next input
+                        return; // Stop further processing for this command
+                    }
+                    
+                    // If it wasn't the special marker or a prompt, display the response normally
+                    displayAIResponse(response); 
+
+                    // Reset processing flag *only* after final result/error is displayed
+                    processingCommand = false;
+                    
+                    // Check if the command resulted in an error message from the AI
+                    const isError = (typeof response === 'string') && (response.includes("Error") || 
+                                    response.startsWith("No ") || 
+                                    response.startsWith("Failed") ||
+                                    response.includes("I didn't understand"));
+                    
+                    // Auto-reset condition (no error, auto-close enabled)
+                    // Note: isParameterPrompt check is implicitly handled by the early return above
+                    if (!isError && autoCloseOnSuccess) {
+                        setTimeout(() => {
+                            // Reset UI
+                            searchInput.value = '';
+                            body.classList.remove('typing');
+                            resultsContainer.innerHTML = ''; // Clear results list too
+                            processingCommand = false;
+                            const csInterface = new CSInterface(); 
+                            csInterface.closeExtension(); 
+                        }, 300); // Keep reduced delay at 300ms
+                    } else {
+                        // Just set processing to false but don't reset UI on errors or if auto-close is off
+                        processingCommand = false;
+                    }
+                    
+                } catch (error) {
+                    // Clear the timeout since we got a response (even if error)
+                    clearTimeout(commandTimeout);
+                    
+                    console.error("Error processing AI command:", error);
+                    displayAIResponse("Sorry, I encountered an error.");
+                    processingCommand = false;
+                    effectStack = []; // Clear stack on error during batch processing too
+                    updateStackCountUI();
+                    // Don't reset UI on errors
+                }
+            }
+            
+            // Function to apply the entire effect stack
+            async function applyEffectStack() {
+
+                if (effectStack.length === 0 || processingCommand) return;
+                
+                processingCommand = true;
+                let originalStack = [...effectStack]; // Keep a copy
+                effectStack = []; // Clear stack immediately 
+                updateStackCountUI(); // Update UI
+
+                displayAIResponse(`Applying ${originalStack.length} stacked command(s)...`);
+                
+                let results = [];
+                let successCount = 0;
+                let failCount = 0;
+
+                // Process each command sequentially
+                for (let i = 0; i < originalStack.length; i++) {
+                    const command = originalStack[i];
+                    try {
+                        // Update display for current command
+                        displayAIResponse(`Applying command ${i + 1}/${originalStack.length}: ${command}`);
+                        
+                        // Debug log for stack command processing
+                        console.log(`Processing stack command [${i+1}/${originalStack.length}]: "${command}"`);
+                        
+                        // For "Transform" in Premiere, ensure it's treated as an effect
+                        let commandToProcess = command;
+                        if (aiCommandProcessor.hostAppName === 'PPRO') {
+                            // Special handling for common abbreviated effect names
+                            const lowerCommand = command.toLowerCase();
+                            
+                            // Check if command has parameters (contains spaces)
+                            if (command.includes(" ")) {
+                                // Extract the first word (potential effect name)
+                                const firstWord = command.split(" ")[0].toLowerCase();
+                                
+                                // Only replace abbreviated effect names, not full commands with parameters
+                                if (firstWord === "transf" || firstWord.startsWith("trans")) {
+                                    // Replace only the effect name part, keep parameters
+                                    console.log(`Converting "${firstWord}" to "Transform" in command while preserving parameters`);
+                                    commandToProcess = command.replace(/^transf\b|^trans\b|^tran\b/i, "Transform");
+                                }
+                                else if (firstWord === "lumet" || firstWord === "lumetr") {
+                                    console.log(`Converting "${firstWord}" to "Lumetri Color" in command while preserving parameters`);
+                                    commandToProcess = command.replace(/^lumet\b|^lumetr\b/i, "Lumetri Color");
+                                }
+                                else if (firstWord === "gauss" || firstWord === "gaus") {
+                                    console.log(`Converting "${firstWord}" to "Gaussian Blur" in command while preserving parameters`);
+                                    commandToProcess = command.replace(/^gauss\b|^gaus\b/i, "Gaussian Blur");
+                                }
+                            } 
+                            // Handle commands without parameters (single words)
+                            else {
+                                if (lowerCommand === "transf" || lowerCommand.startsWith("trans") || lowerCommand.startsWith("tran")) {
+                                    console.log(`Converting "${command}" to "Transform" effect in stack`);
+                                    commandToProcess = "Transform";
+                                }
+                                else if (lowerCommand === "lumet" || lowerCommand.includes("lumet")) {
+                                    console.log(`Converting "${command}" to "Lumetri Color" effect in stack`);
+                                    commandToProcess = "Lumetri Color";
+                                }
+                                else if (lowerCommand === "gauss" || lowerCommand === "gaus") {
+                                    console.log(`Converting "${command}" to "Gaussian Blur" effect in stack`);
+                                    commandToProcess = "Gaussian Blur";
+                                }
+                            }
+                        }
+                        
+                        const response = await aiCommandProcessor.processCommand(commandToProcess);
+                        results.push(`${i + 1}. ${command}: ${response}`);
+                        
+                        // Basic check for success/error in response
+                        const isError = response.includes("Error") || 
+                                        response.startsWith("No ") || 
+                                        response.startsWith("Failed") ||
+                                        response.includes("didn't understand");
+                        if (isError) {
+                            failCount++;
+                        } else {
+                            successCount++;
+                        }
+                        
+                        // Optional small delay between commands if needed
+                        // await new Promise(resolve => setTimeout(resolve, 100)); 
+
+                    } catch (error) {
+                        console.error(`Error processing command "${command}" in stack:`, error);
+                        results.push(`${i + 1}. ${command}: Failed - ${error.toString()}`);
+                        failCount++;
+                    }
+                }
+
+                // Display final summary
+                let summary = '';
+                if (failCount === 0 && successCount > 0) {
+                    summary = `Applied ${successCount} command${successCount > 1 ? 's' : ''} from the stack.`;
+                } else if (successCount > 0 && failCount > 0) {
+                    summary = `Applied ${successCount} command${successCount > 1 ? 's' : ''}, but ${failCount} failed.`;
+                } else if (failCount > 0) {
+                    summary = `Could not apply commands from the stack (${failCount} failed).`;
+                } else { // Should not happen if stack wasn't empty
+                    summary = "Finished processing the stack.";
+                }
+                // --- END REVISED SUMMARY ---
+                displayAIResponse(summary);
+
+                // Auto-reset UI after summary
+                // Respect the auto-close setting
+                if (autoCloseOnSuccess) {
+                    setTimeout(() => {
+                        searchInput.value = '';
+                        body.classList.remove('typing');
+                        resultsContainer.innerHTML = ''; // Clear results list too
+                        processingCommand = false;
+                        const csInterface = new CSInterface(); 
+                        csInterface.closeExtension(); 
+                    }, 1000); // Keep stack delay a bit longer (1s) to read summary
+                } else {
+                    processingCommand = false; // Reset immediately if not auto-closing
+                }
+            }
+            
+            // Load favorites from local storage
+            function loadFavorites() {
+                console.log("Attempting to load favorites..."); // Log start
+                const storedFavorites = terminal.storedFavorites;
+                if (storedFavorites) {
+                    try {
+                        favorites = JSON.parse(storedFavorites);
+                        // Ensure favorites are objects with name and type/category
+                        favorites = favorites.map(fav => {
+                            if (typeof fav === 'string') {
+                                // Attempt to infer type based on itemsList or default to 'custom'
+                                const matchedItem = itemsList.find(item => item.name === fav);
+                                return { 
+                                    name: fav, 
+                                    type: matchedItem ? matchedItem.type : 'custom',
+                                    category: matchedItem ? matchedItem.category : 'Custom'
+                                };
+                            } else if (typeof fav === 'object' && fav.name) {
+                                // Ensure it has type and category
+                                fav.type = fav.type || (itemsList.find(item => item.name === fav.name) ? itemsList.find(item => item.name === fav.name).type : 'custom');
+                                fav.category = fav.category || (itemsList.find(item => item.name === fav.name) ? itemsList.find(item => item.name === fav.name).category : 'Custom');
+                                return fav;
+                            }
+                            return null; // Invalid favorite format
+                        }).filter(fav => fav !== null); // Remove invalid entries
+                        console.log("Loaded and normalized favorites:", favorites); // Log success
+                        
+                    } catch (e) {
+                        console.error("Error parsing/normalizing favorites from localStorage:", e); // Log error
+                        favorites = [];
+                    }
+                } else {
+                    favorites = [];
+                    console.log("No favorites found in localStorage."); // Log empty case
+                }
+            }
+            
+            // Save favorites to local storage
+            function saveFavorites() {
+                try {
+                    var event = new CSEvent("com.tinytapes.terminal.panel", "APPLICATION");  
+                    event.data = { message: "saveFavorites",value:JSON.stringify(favorites)};
+                    event.extensionId = "com.example.terminal.panel"
+                    terminal.csi.dispatchEvent(event);  
+                    console.log("Favorites saved to localStorage:", favorites); // Log success
+                } catch (e) {
+                     console.error("Error saving favorites to localStorage:", e); // Log error
+                }
+            }
+            
+            function isFavorite(itemToCheck) {
+                // Check if the item (object with name) exists in the favorites array
+                return favorites.some(fav => fav.name === itemToCheck.name);
+            }
+            
+            function toggleFavorite(itemToToggle, iconElement, resultItemElement) {
+                const commandString = itemToToggle.name;
+                const index = favorites.findIndex(fav => fav.name === commandString);
+                if (index > -1) {
+                    // Remove from favorites
+                    favorites.splice(index, 1);
+                    iconElement.textContent = '☆';
+                    resultItemElement.classList.remove('is-favorite');
+                } else {
+                    // Add to favorites (ensure adding the object)
+                    favorites.push(itemToToggle); // Add the whole item object
+                    iconElement.textContent = '★';
+                    resultItemElement.classList.add('is-favorite');
+                }
+                saveFavorites();
+                // Re-populate results to reflect the favorite status change if needed,
+               // especially if the current view is affected by favorites.
+               // populateResults(searchInput.value); // Optional: uncomment if immediate refresh is desired
+            }
+            
+            // Map of effects to their common, controllable parameters for guided input
+            const guidedParameters = {
+                // Color & Basic Effects
+                "Lumetri Color": ["Contrast", "Exposure", "Saturation", "Temperature", "Tint", "Vibrance", "Highlights", "Shadows"],
+                "Levels": ["Input Black", "Input White", "Gamma"],
+                "Curves": ["RGB", "Red", "Green", "Blue"],
+                "Hue/Saturation": ["Master Hue", "Master Saturation", "Master Lightness"],
+                "Color Balance (HLS)": ["Hue", "Saturation", "Lightness"],
+                "Brightness & Contrast": ["Brightness", "Contrast"],
+                "Exposure": ["Exposure", "Gamma Correction"],
+                "Tint": ["Amount to Tint"],
+                
+                // Blur & Sharpen Effects
+                "Gaussian Blur": ["Blurriness", "Repeat Edge Pixels"],
+                "Fast Box Blur": ["Blur Radius", "Iterations"],
+                "Camera Lens Blur": ["Radius", "Highlight Gain"],
+                "Motion Blur": ["Angle", "Distance"],
+                "Radial Blur": ["Amount", "Center"],
+                "Unsharp Mask": ["Amount", "Radius", "Threshold"],
+                
+                // Distortion Effects
+                "Turbulent Displace": ["Amount", "Size", "Complexity"],
+                "Displacement Map": ["Horizontal Displacement", "Vertical Displacement", "Scale"],
+                "Bulge": ["Bulge Center", "Bulge Height"],
+                "Wave Warp": ["Wave Height", "Wave Width", "Direction"],
+                "Liquify": ["Brush Size", "Brush Pressure"],
+                "Mirror": ["Reflection Center", "Reflection Angle"],
+                "Transform": ["Scale", "Rotation", "Position", "Opacity", "Skew"],
+                
+                // Generate Effects
+                "Fractal Noise": ["Contrast", "Brightness", "Scale", "Complexity"],
+                "Lens Flare": ["Flare Center", "Flare Brightness"],
+                "CC Particle World": ["Birth Rate", "Longevity", "Size"],
+                "Audio Spectrum": ["Start Point", "End Point", "Maximum Height"],
+                "4-Color Gradient": ["Positions", "Colors"],
+                
+                // Stylize Effects
+                "Glow": ["Glow Threshold", "Glow Radius", "Glow Intensity"],
+                "Drop Shadow": ["Shadow Color", "Opacity", "Distance", "Softness"],
+                "Roughen Edges": ["Border", "Edge Sharpness", "Scale"],
+                "Stroke": ["Brush Size", "Stroke Width", "Opacity"],
+                
+                // 3D Effects
+                "3D Channel Extract": ["Extraction", "White Point", "Black Point"],
+                
+                // Video Copilot Effects
+                "Saber": ["Size", "Softness", "Start Color", "End Color"],
+                "Optical Flares": ["Brightness", "Scale", "Position"],
+                "Element 3D": ["Group Settings", "Material Settings", "Render Settings"],
+                
+                // Motion & Transform
+                "Motion": ["Scale", "Rotation", "Position", "Opacity"],
+                "Puppet": ["Position", "Scale", "Rotation"],
+                "Motion Tile": ["Tile Width", "Tile Height", "Output Width"],
+                "Corner Pin": ["Upper Left", "Upper Right", "Lower Left", "Lower Right"],
+                
+                // Tracking & Stabilization
+                "Warp Stabilizer VFX": ["Method", "Smoothness", "Borders"],
+                "Track Motion": ["Position", "Scale", "Rotation"],
+                
+                // Other Useful Controls
+                "Opacity": ["Opacity"],
+                "Basic 3D": ["Swivel", "Tilt", "Distance to Image"],
+                "Crop": ["Left", "Top", "Right", "Bottom"],
+                "Ultra Key": ["Output", "Matte Generation", "Spill Suppression"],
+                "Timecode": ["Format", "Position", "Size"],
+                "Gradient": ["Start Color", "End Color", "Start Point", "End Point"],
+                "Keylight": ["Screen Colour", "Screen Gain"]
+            };
+            
+            // Function to populate search results
+            function populateResults(query) {
+ 
+                const resultsContainer = document.getElementById('results-container');
+                const searchInput = document.getElementById('search-input');
+                const originalQuery = searchInput.value; // Preserve original case for potential custom commands
+                const normalizedQuery = query.toLowerCase().trim();
+                resultsContainer.innerHTML = ''; // Clear previous results
+                selectedItemIndex = -1; // Reset selection
+                filteredItems = []; // Clear the keyboard navigation list
+
+                // Determine if the input is the trigger key BEFORE checking if empty
+                const isFavoritesTrigger = normalizedQuery === favoritesTriggerKey && favoritesTriggerKey !== '';
+
+                // Early exit if the query is empty AND it's not the favorites trigger key
+                if (normalizedQuery === '' && !isFavoritesTrigger) {
+                    document.body.classList.remove('typing');
+                    resultsContainer.innerHTML = ''; // Ensure results are empty
+                    return;
+                }
+
+                document.body.classList.remove('idle');
+                document.body.classList.add('typing');
+
+                let finalResults = [];
+                let showCustomCommandSuggestion = true; // Flag to track if we should show the 'apply as custom' option
+                const displayedNames = new Set(); // Keep track of names added to avoid duplicates
+
+                // Handle favorites trigger key or 'Show Favorites Only' mode
+                if (isFavoritesTrigger) {
+                    console.log("Favorites trigger detected.");
+                    finalResults = favorites.map(fav => ({ ...fav, isFavorite: true })); // Mark all as favorite for rendering
+                    finalResults.forEach(item => displayedNames.add(item.name.toLowerCase()));
+                    showCustomCommandSuggestion = false; // Don't show custom suggestion in favorites-only trigger mode
+                } else if (showFavoritesOnly) {
+                    console.log("Show favorites only mode active. Query:", normalizedQuery);
+                    // Filter favorites based on the query
+                    finalResults = favorites
+                        .filter(fav => fav.name && fav.name.toLowerCase().includes(normalizedQuery)) // Ensure fav.name exists
+                        .map(fav => ({ ...fav, isFavorite: true }));
+                    finalResults.forEach(item => displayedNames.add(item.name.toLowerCase()));
+                    // Only show custom command suggestion if query doesn't exactly match a favorite
+                    showCustomCommandSuggestion = !finalResults.some(fav => fav.name.toLowerCase() === normalizedQuery);
+                } else {
+                    console.log("Normal search mode active. Query:", normalizedQuery);
+                    // Regular search: include parameter suggestions, favorites, effects, transitions
+
+                    // 1. Parameter Suggestions
+                    let parameterSuggestions = [];
+                    
+                    // Create a filtered list of effects based on the current host application
+                    const filteredGuidedParams = {};
+                    
+                    // Filter effects based on the current host application
+                    Object.entries(guidedParameters).forEach(([effectName, params]) => {
+                        // Check if this effect should be included for the current host application
+                        let includeEffect = true;
+                        
+                        // After Effects specific effects - skip in Premiere
+                        if (aiCommandProcessor.hostAppName === 'PPRO') {
+                            const aeOnlyEffects = [
+                                "Element 3D", "Optical Flares", "Saber", // Video Copilot
+                                "CC Particle World", "CC Sphere", "CC Light Sweep", // Creative Cloud
+                                "3D Channel Extract", "Environment", // 3D effects
+                                "Track Camera", "Puppet", // AE specific tools
+                                "Wave Warp", "Motion Tile", "Turbulent Displace", // AE distortions
+                            ];
+                            
+                            if (aeOnlyEffects.includes(effectName)) {
+                                includeEffect = false;
+                            }
+                        }
+                        
+                        // Premiere Pro specific effects - skip in After Effects
+                        if (aiCommandProcessor.hostAppName === 'AEFT') {
+                            const pproOnlyEffects = [
+                                "Ultra Key", // Premiere Pro keying
+                            ];
+                            
+                            if (pproOnlyEffects.includes(effectName)) {
+                                includeEffect = false;
+                            }
+                        }
+                        
+                        // Include the effect if it's compatible with current host
+                        if (includeEffect) {
+                            filteredGuidedParams[effectName] = params;
+                        }
+                    });
+                    
+                    // Find effect entries where the effect name starts with the query, 
+                    // OR the query starts with the effect name (potentially with more text after)
+                    const matchingGuidedEntries = Object.entries(filteredGuidedParams)
+                        .filter(([effectName]) => 
+                            effectName.toLowerCase().startsWith(normalizedQuery) || 
+                            normalizedQuery.startsWith(effectName.toLowerCase() + ' ') ||
+                            normalizedQuery.toLowerCase() === effectName.toLowerCase() 
+                        )
+                        // Sort by length descending to prioritize more specific matches if query includes parameter part
+                        .sort((a, b) => b[0].length - a[0].length); 
+
+                    if (matchingGuidedEntries.length > 0) {
+                        // Use the best match (longest effect name match)
+                        const [effectName, effectParams] = matchingGuidedEntries[0];
+                        
+                        // Determine the part of the query after the matched effect name
+                        let paramQueryPart = '';
+                        if (normalizedQuery.toLowerCase().startsWith(effectName.toLowerCase())) {
+                             // Includes cases like "lumetri", "lumetri ", "lumetri c", "lumetri contrast"
+                             paramQueryPart = normalizedQuery.substring(effectName.length).trim().toLowerCase();
+                        }
+
+                        // Filter parameters based on the remaining query part
+                        parameterSuggestions = effectParams
+                            .filter(param => param.toLowerCase().includes(paramQueryPart))
+                            .map(param => ({
+                                name: `${effectName} ${param}`, // Suggest "Effect Name Parameter"
+                                type: 'parameter_suggestion',
+                                category: 'Parameter',
+                                isFavorite: false // Parameter suggestions are not favorited themselves
+                            }));
+                    }
+
+                    // Add parameter suggestions first, ensuring no duplicates
+                    parameterSuggestions.forEach(item => {
+                        if (!displayedNames.has(item.name.toLowerCase())) {
+                            finalResults.push(item);
+                            displayedNames.add(item.name.toLowerCase());
+                        }
+                    });
+
+                    // 2. Direct Parameter Search (New)
+                    let directParameterMatches = [];
+                    Object.entries(filteredGuidedParams).forEach(([effectName, params]) => {
+                        params.forEach(param => {
+                            // Check if the parameter name itself includes the query
+                            if (param.toLowerCase().includes(normalizedQuery)) {
+                                const fullName = `${effectName} ${param}`;
+                                // Add only if not already added by the effect-first suggestion logic
+                                if (!displayedNames.has(fullName.toLowerCase())) {
+                                    directParameterMatches.push({
+                                        name: fullName,
+                                        type: 'parameter_suggestion',
+                                        category: 'Parameter',
+                                        isFavorite: false
+                                    });
+                                    displayedNames.add(fullName.toLowerCase()); // Mark as added
+                                }
+                            }
+                        });
+                    });
+                    // Add these direct parameter matches to the results
+                    finalResults.push(...directParameterMatches);
+
+                    // 3. Matching Favorites (that haven't already been added)
+                    const matchingFavorites = favorites
+                        .filter(fav => fav.name.toLowerCase().includes(normalizedQuery) && !displayedNames.has(fav.name.toLowerCase()))
+                        .map(fav => ({ ...fav, isFavorite: true })); // Mark as favorite
+
+                    matchingFavorites.forEach(item => {
+                        finalResults.push(item);
+                        displayedNames.add(item.name.toLowerCase());
+                    });
+
+                    // 4. Matching Effects & Transitions (that haven't been added)
+                    // Combine effects and transitions from itemsList for easier filtering
+                    const matchingItemsList = itemsList
+                        .filter(item => {
+                            // Skip transitions when in After Effects
+                            if (aiCommandProcessor.hostAppName === 'AEFT' && item.type === 'transition') {
+                                return false;
+                            }
+                            
+                            return item.name.toLowerCase().includes(normalizedQuery) &&
+                                   !displayedNames.has(item.name.toLowerCase());
+                        })
+                        .map(item => {
+                             const commandString = item.name;
+                             const isFav = isFavorite(item); // Check using the item object
+                             return { ...item, isFavorite: isFav }; 
+                         });
+
+                    matchingItemsList.forEach(item => {
+                        finalResults.push(item);
+                        displayedNames.add(item.name.toLowerCase());
+                    });
+
+                    // Determine if the exact query matches any displayed item
+                    if (displayedNames.has(normalizedQuery)) {
+                        showCustomCommandSuggestion = false;
+                    }
+                }
+
+                // Add "Apply as Custom Command" option if applicable and not in favorites-only mode
+                if (!showFavoritesOnly && !isFavoritesTrigger && showCustomCommandSuggestion && normalizedQuery !== '') {
+                    const customCommandItem = {
+                        name: originalQuery, // Use original casing
+                        type: 'custom',
+                        category: 'Custom'
+                    };
+                    // Check if this specific custom command string is favorited
+                    customCommandItem.isFavorite = isFavorite(customCommandItem); // Check using the object
+
+                    // Only add if it's not already displayed
+                    if (!displayedNames.has(customCommandItem.name.toLowerCase())) {
+                        finalResults.push(customCommandItem);
+                    }
+                }
+                
+                // --- Add sorting logic here --- START ---
+                finalResults.sort((a, b) => {
+                    const queryLower = normalizedQuery;
+                    const aNameLower = a.name.toLowerCase();
+                    const bNameLower = b.name.toLowerCase();
+
+                    // Priority 1: Exact match for the query (non-parameter)
+                    const aIsExactMatch = (aNameLower === queryLower && a.type !== 'parameter_suggestion');
+                    const bIsExactMatch = (bNameLower === queryLower && b.type !== 'parameter_suggestion');
+
+                    if (aIsExactMatch && !bIsExactMatch) return -1; // a comes first
+                    if (!aIsExactMatch && bIsExactMatch) return 1;  // b comes first
+                    
+                    // Priority 2: Favorites (non-parameter)
+                    const aIsFav = (a.isFavorite && a.type !== 'parameter_suggestion');
+                    const bIsFav = (b.isFavorite && b.type !== 'parameter_suggestion');
+
+                    if (aIsFav && !bIsFav) return -1; // a comes first
+                    if (!aIsFav && bIsFav) return 1;  // b comes first
+                    
+                    // Priority 3: Parameter Suggestions (these were already added first, but this keeps them grouped if needed)
+                    const aIsParam = a.type === 'parameter_suggestion';
+                    const bIsParam = b.type === 'parameter_suggestion';
+
+                    if (!aIsParam && bIsParam) return -1; // Non-params before params
+                    if (aIsParam && !bIsParam) return 1;  // Params after non-params
+
+                    // Default: Alphabetical sort for items of same priority
+                    return aNameLower.localeCompare(bNameLower);
+                });
+                 // --- Add sorting logic here --- END ---
+                
+                // Render results
+                filteredItems = finalResults; // Update list for keyboard navigation
+
+                resultsContainer.innerHTML = ''; // Clear previous before rendering new
+                
+                finalResults.forEach((item, index) => {
+                    const div = document.createElement('div');
+                    div.classList.add('result-item');
+                    div.setAttribute('data-index', index); // For keyboard navigation tracking
+
+                    // Add specific class for parameter suggestions
+                    if (item.type === 'parameter_suggestion') {
+                        div.classList.add('parameter-suggestion');
+                    }
+
+                    const nameSpan = document.createElement('span');
+                    nameSpan.classList.add('result-name');
+                    nameSpan.textContent = item.name;
+
+                    const categorySpan = document.createElement('span');
+                    categorySpan.classList.add('result-category');
+                    // Determine category text based on type or existing category property
+                    switch (item.type) {
+                        case 'effect':
+                            categorySpan.textContent = 'Effect';
+                            break;
+                        case 'transition':
+                            categorySpan.textContent = 'Transition';
+                            break;
+                        case 'custom':
+                            categorySpan.textContent = 'Custom';
+                            break;
+                        case 'parameter_suggestion':
+                            categorySpan.textContent = 'Parameter';
+                            break;
+                        default:
+                            categorySpan.textContent = item.category || 'Unknown'; // Fallback
+                    }
+
+                    div.appendChild(nameSpan);
+                    div.appendChild(categorySpan);
+
+                    // Only add favorite icon if it's not a parameter suggestion
+                    if (item.type !== 'parameter_suggestion') {
+                        const favoriteIcon = document.createElement('span');
+                        favoriteIcon.classList.add('favorite-icon');
+                        // Use isFavorite property which should now be correctly set for all items
+                        favoriteIcon.innerHTML = item.isFavorite ? '★' : '☆'; // Filled or empty star
+                        favoriteIcon.onclick = (e) => {
+                            e.stopPropagation(); // Prevent triggering item selection
+                            // Pass the actual item object to toggleFavorite
+                            const itemData = finalResults.find(f => f.name === item.name); 
+                            if(itemData) {
+                               toggleFavorite(itemData, favoriteIcon, div);
+                            } else {
+                               console.error("Could not find item data for favorite toggle:", item.name);
+                            }
+                        };
+                        div.appendChild(favoriteIcon);
+                    }
+
+                    div.onclick = (e) => {
+                        if (e.target.classList.contains('favorite-icon')) return; // Ignore clicks on the star itself
+
+                        // If shift key is pressed, add to stack
+                        if (e.shiftKey) {
+                            effectStack.push(item.name);
+                            updateStackCountUI();
+                            searchInput.value = '';
+                            resultsContainer.innerHTML = '';
+                            selectedItemIndex = -1;
+                            filteredItems = [];
+                            document.body.classList.remove('typing');
+                            searchInput.focus();
+                        } else {
+                            // Normal click: Populate input, clear results, refocus
+                            searchInput.value = item.name;
+                            resultsContainer.innerHTML = ''; // Hide results after click
+                            document.body.classList.add('idle'); // Go back to idle state visually
+                            document.body.classList.remove('typing');
+                            searchInput.focus(); // Keep focus for potential value input or Enter press
+                            // Do NOT submit command here, wait for Enter key press
+                        }
+                    };
+
+                    resultsContainer.appendChild(div);
+                });
+
+                // Add selected class to the first item if results exist
+                if (resultsContainer.children.length > 0) {
+                    selectedItemIndex = 0;
+                    // Check if item exists before adding class (Fix for potential error)
+                    if(resultsContainer.children[selectedItemIndex]) {
+                       resultsContainer.children[selectedItemIndex].classList.add('selected');
+                    }
+                }
+            }
+            
+            // Function to update selected item
+            function updateSelectedItem(newIndex) {
+                // Remove selection from all items
+                const items = document.querySelectorAll('.result-item');
+                items.forEach(item => item.classList.remove('selected'));
+                
+                // If we have a valid index, select that item
+                if (newIndex >= 0 && newIndex < items.length) {
+                    selectedItemIndex = newIndex;
+                    // Check if item exists before adding class
+                    if(items[selectedItemIndex]) {
+                       items[selectedItemIndex].classList.add('selected');
+                       // Ensure the selected item is visible (scroll if needed)
+                       items[selectedItemIndex].scrollIntoView({
+                           behavior: 'smooth',
+                           block: 'nearest'
+                       });
+                    }
+                }
+            }
+            
+            // Function to apply effect/transition to selected clips
+            function applyItemToSelectedClips(item) {
+                try {
+                    console.log(`Attempting to apply ${item.type}: ${item.name}`);
+                    
+                    // Show applying message with a faster timeout
+                    displayAIResponse(`Applying ${item.name}...`);
+                    
+                    // Add global timeout to clear "Processing" message in case of silent failures
+                    const responseTimeout = setTimeout(() => {
+                        // If we're still showing "Applying..." after 2 seconds, assume it completed
+                        // but didn't properly update the UI
+                        if (document.querySelector('.ai-response .result-title').textContent.includes('Applying')) {
+                            console.log('Response timeout triggered - clearing "Processing" state');
+                            displayAIResponse(`${item.name} applied. (Auto-completed)`);
+                            processingCommand = false;
+                        }
+                    }, 2000);
+                    
+                    if (item.type === 'effect') {
+                        aiCommandProcessor.hostActions.applyEffect(item.name)
+                            .then(result => {
+                                // Clear the timeout since we got a response
+                                clearTimeout(responseTimeout);
+                                
+                                console.log(`Effect application result:`, result);
+                                // Check the actual result string
+                                if (result && result.toLowerCase().includes("no clips selected")) {
+                                    displayAIResponse(result); // Show the "No clips selected" message
+                                    // Don't auto-close on this specific message
+                                    processingCommand = false; // Allow next command
+                                } else if (result && result.toLowerCase().startsWith("error")) {
+                                    displayAIResponse(result); // Show the error message
+                                    processingCommand = false;
+                                } else {
+                                    // Assume success for other messages (like "Effect applied successfully")
+                                    displayAIResponse("Effect applied successfully");
+                                
+                                    // Auto-reset after successful application, respecting setting
+                                    if (autoCloseOnSuccess) {
+                                        setTimeout(() => {
+                                            searchInput.value = '';
+                                            body.classList.remove('typing');
+                                            resultsContainer.innerHTML = '';
+                                            const csInterface = new CSInterface(); 
+                                            csInterface.closeExtension(); 
+                                        }, 300); // Keep reduced delay at 300ms
+                                    } else {
+                                        processingCommand = false; // Allow next command immediately if not auto-closing
+                                    }
+                                }
+                            })
+                            .catch(error => { // Catch errors during the call itself
+                                 // Clear the timeout since we got a response
+                                clearTimeout(responseTimeout);
+                                
+                                console.error("Error during effect application call:", error);
+                                displayAIResponse(`Error applying effect: ${error.toString()}`);
+                                processingCommand = false;
+                            });
+                    } else if (item.type === 'transition') {
+                        aiCommandProcessor.hostActions.applyTransition(item.name)
+                            .then(result => {
+                                // Clear the timeout since we got a response
+                                clearTimeout(responseTimeout);
+                                
+                                console.log(`Transition application result:`, result);
+                                displayAIResponse("Transition applied successfully");
+                                
+                                // Auto-reset after successful application, respecting setting
+                                if (autoCloseOnSuccess) {
+                                    setTimeout(() => {
+                                        searchInput.value = '';
+                                        body.classList.remove('typing');
+                                        resultsContainer.innerHTML = '';
+                                        const csInterface = new CSInterface(); 
+                                        csInterface.closeExtension(); 
+                                    }, 300); // Keep reduced delay at 300ms
+                                } else {
+                                    processingCommand = false; // Allow next command immediately if not auto-closing
+                                }
+                            })
+                            .catch(error => {
+                                // Clear the timeout since we got a response
+                                clearTimeout(responseTimeout);
+                                
+                                console.error("Error during transition application:", error);
+                                displayAIResponse(`Error applying transition: ${error.toString()}`);
+                                processingCommand = false;
+                            });
+                    } else if (item.type === 'preset') {
+                        aiCommandProcessor.hostActions.applyPreset(item.name)
+                            .then(result => {
+                                // Clear the timeout since we got a response
+                                clearTimeout(responseTimeout);
+                                
+                                console.log(`Preset application result:`, result);
+                                // Check the actual result string
+                                if (result && result.toLowerCase().includes("no clips selected")) {
+                                    displayAIResponse(result); // Show the "No clips selected" message
+                                    // Don't auto-close on this specific message
+                                    processingCommand = false; // Allow next command
+                                } else if (result && result.toLowerCase().startsWith("error")) {
+                                    displayAIResponse(result); // Show the error message
+                                    processingCommand = false;
+                                } else {
+                                    // Assume success for other messages (like "Effect applied successfully")
+                                    displayAIResponse("Preset applied successfully");
+                                
+                                    // Auto-reset after successful application, respecting setting
+                                    if (autoCloseOnSuccess) {
+                                        setTimeout(() => {
+                                            searchInput.value = '';
+                                            body.classList.remove('typing');
+                                            resultsContainer.innerHTML = '';
+                                            const csInterface = new CSInterface(); 
+                                            csInterface.closeExtension(); 
+                                        }, 300); // Keep reduced delay at 300ms
+                                    } else {
+                                        processingCommand = false; // Allow next command immediately if not auto-closing
+                                    }
+                                }
+                            })
+                            .catch(error => { // Catch errors during the call itself
+                                 // Clear the timeout since we got a response
+                                clearTimeout(responseTimeout);
+                                
+                                console.error("Error during preset application call:", error);
+                                displayAIResponse(`Error applying preset: ${error.toString()}`);
+                                processingCommand = false;
+                            });
+                    }
+                    
+                } catch (error) {
+                    console.error(`Error applying ${item.type}:`, error);
+                    displayAIResponse(`Error applying ${item.type}`);
+                    processingCommand = false;
+                    
+                    // Auto-reset after error display
+                    setTimeout(() => {
+                        searchInput.value = '';
+                        body.classList.remove('typing');
+                        resultsContainer.innerHTML = '';
+                        setTimeout(() => searchInput.focus(), 100);
+                    }, 1500);
+                }
+            }
+            
+            // Auto-focus the input
+            setTimeout(() => searchInput.focus(), 100);
+            
+            // Populate results initially (can be empty or show all)
+            populateResults('');
+            
+            // Handle input events to toggle expanded/collapsed states and filter results
+            searchInput.addEventListener('input', function(e) {
+                // Only populate results if NOT waiting for a parameter
+                if (!pendingParameterContext) { 
+                    if (this.value.length > 0) {
+                        body.classList.add('typing');
+                        populateResults(this.value);
+                    } else {
+                        body.classList.remove('typing');
+                        populateResults('');
+                    }
+                } else {
+                    // If waiting for parameter, do NOT populate results on input
+                    // Ensure results container is hidden
+                    // REMOVED: body.classList.remove('typing'); - Keep typing class while waiting for param
+                    resultsContainer.innerHTML = ''; // Explicitly clear results
+                }
+            });
+            
+            // Handle focus events
+            searchInput.addEventListener('focus', function() {
+                if (this.value.length > 0) {
+                    body.classList.add('typing');
+                    populateResults(this.value);
+                }
+            });
+            
+            // Handle keyboard navigation and Enter to apply
+            window.addEventListener('keydown', function(e) {
+                if (body.classList.contains('typing')) {
+                    switch (e.key) {
+                        case 'ArrowDown':
+                            e.preventDefault();
+                            // Adjust selection logic if stack count element interferes (unlikely)
+                            const totalItemsDown = document.querySelectorAll('.result-item').length;
+                            if (selectedItemIndex < totalItemsDown - 1) {
+                                updateSelectedItem(selectedItemIndex + 1);
+                            }
+                            break;
+                            
+                        case 'ArrowUp':
+                            e.preventDefault();
+                             if (selectedItemIndex > 0) {
+                                updateSelectedItem(selectedItemIndex - 1);
+                            }
+                            break;
+                            
+                        case 'Enter':
+                            e.preventDefault(); // Prevent default form submission/newline
+                            
+                            if (e.shiftKey) {
+                                // --- Shift + Enter: Add to stack (handles pending parameter context) ---
+                                const valueEntered = searchInput.value.trim();
+                                let commandToStack = '';
+
+                                if (pendingParameterContext) {
+                                    // If we were waiting for a parameter value, combine it
+                                    if (valueEntered !== '') {
+                                        // Don't allow stacking just the parameter name, but allow stacking the completed command
+                                        // Check if the entered value itself looks like a command (less likely, but possible)
+                                        // For now, let's assume if pendingParameterContext exists, Shift+Enter stacks the *completed* command.
+                                        commandToStack = `${pendingParameterContext} ${valueEntered}`;
+                                        pendingParameterContext = null; // Clear context after combining for stack
+                                    } else {
+                                        // User hit Shift+Enter without a value after prompt - ignore
+                                        // Do not add anything to stack, just clear context and refocus
+                                        pendingParameterContext = null;
+                                        searchInput.value = ''; 
+                                        searchInput.focus();
+                                        return; // Stop processing this key event
+                                    }
+                                } else {
+                                    // Otherwise, just use the text currently in the input
+                                    // But check if the selected item *is* a parameter suggestion - if so, don't stack
+                                    const itemsForStackCheck = document.querySelectorAll('.result-item');
+                                     if (selectedItemIndex >= 0 && selectedItemIndex < itemsForStackCheck.length) {
+                                         const selectedItemDataForStack = filteredItems[selectedItemIndex];
+                                         if (selectedItemDataForStack.type === 'parameter_suggestion') {
+                                              // Don't stack parameter suggestions directly
+                                              return; // Stop processing this key event
+                                         }
+                                     }
+                                    // If not a parameter suggestion, use the input value
+                                    commandToStack = valueEntered;
+                                }
+                                
+                                if (commandToStack) {
+                                    effectStack.push(commandToStack);
+                                    updateStackCountUI();
+                                    console.log("Added to stack:", commandToStack, "Stack:", effectStack);
+                                    searchInput.value = '';
+                                    resultsContainer.innerHTML = ''; 
+                                    selectedItemIndex = -1;
+                                    // pendingParameterContext is already handled above
+                                    searchInput.focus();
+                                }
+                            } else {
+                                // --- Enter (no Shift): Handle parameter input or apply command ---
+                                const commandTextEnter = searchInput.value.trim();
+                                
+                                // STEP 2: Check if waiting for a parameter value
+                                if (pendingParameterContext) {
+                                    if (commandTextEnter !== '') {
+                                        // Construct the next command step by combining context and value
+                                        const fullCommand = `${pendingParameterContext} ${commandTextEnter}`; // Seems correct
+                                        console.log("[Enter Key] Constructing full command:", fullCommand);
+                                        pendingParameterContext = null; // Clear context, ready for next step or final execution
+                                        processAICommand(fullCommand); // Process the combined command
+                                    } else {
+                                        // User pressed Enter without typing a value, maybe show a hint?
+                                        displayAIResponse("Please enter a value after the prompt."); 
+                                        // Keep pendingParameterContext active, keep focus
+                                    }
+                                }
+                                // STEP 1 or Normal Execution
+                                else {
+                                    // Check for empty stack command first
+                                    if (commandTextEnter === '' && effectStack.length > 0) {
+                                        applyEffectStack();
+                                    } else {
+                                        const items = document.querySelectorAll('.result-item');
+                                        if (selectedItemIndex >= 0 && selectedItemIndex < items.length) {
+                                            const selectedItemData = filteredItems[selectedItemIndex];
+                                            
+                                            // STEP 1: Check if selected item is a parameter suggestion
+                                            if (selectedItemData.type === 'parameter_suggestion') {
+                                                pendingParameterContext = selectedItemData.name; // Store param name
+                                                const propNamePart = selectedItemData.name.substring(selectedItemData.name.lastIndexOf(' ') + 1);
+                                                // Make sure results container is visible for the prompt
+                                                body.classList.add('typing'); 
+                                                resultsContainer.style.maxHeight = 'initial'; // Ensure it can show the prompt
+                                                displayAIResponse(`Enter value for ${propNamePart}:`); // Simple prompt
+                                                searchInput.value = ''; // Clear input for value entry
+                                                searchInput.focus();
+                                                // Explicitly stop further processing for this Enter press
+                                                return;
+                                            }
+                                            // Original logic for other types
+                                             else if (selectedItemData.type === 'effect' || selectedItemData.type === 'transition'
+                                             || selectedItemData.type === 'preset' ) {
+                                                applyItemToSelectedClips(selectedItemData);
+                                            } else if (selectedItemData.type === 'custom') {
+                                                processAICommand(selectedItemData.name); 
+                                            } else if (items[selectedItemIndex].classList.contains('custom-command')) {
+                                                processAICommand(searchInput.value); 
+                                            }
+                                        } else if (commandTextEnter !== '') {
+                                            // No item selected, but text entered -> process as command
+                                            processAICommand(commandTextEnter);
+                                        }
+                                    }
+                                }
+                            }
+                            break; // End Enter case
+                        
+                        // Toggle between AI mode and search mode with Tab
+                        case 'Tab':
+                             e.preventDefault();
+                             toggleSearchMode();
+                             break;
+                    }
+                } else if (e.key === 'Enter' && searchInput === document.activeElement && effectStack.length > 0 && searchInput.value.trim() === '') {
+                     // Handle applying stack even if body doesn't have 'typing' class (e.g., focus is on empty input)
+                     e.preventDefault();
+                     applyEffectStack();
+                }
+                
+                if (e.key === 'Escape') {
+                    if (searchInput.value.length > 0) {
+                        searchInput.value = '';
+                        body.classList.remove('typing');
+                        populateResults('');
+                        setTimeout(() => searchInput.focus(), 100);
+                    } else {
+                        window.close();
+                    }
+                }
+            });
+            
+            // Set up toolbar item handlers
+            document.querySelectorAll('.toolbar-item').forEach(item => {
+                item.addEventListener('click', function() {
+                    const command = this.textContent.trim();
+                    if (command === 'support') {
+                        searchInput.value = 'help';
+                        body.classList.add('typing');
+                        processAICommand('help');
+                    } else if (command === 'settings') {
+                        showSettingsView(); // Show the settings panel
+                    } else if (command === 'store') {
+                        const csInterface = new CSInterface();
+                        csInterface.openURLInDefaultBrowser('https://tinytapes.ca/');
+                    }
+                });
+            });
+
+            // Add event listener for the settings close button
+            settingsCloseButton.addEventListener('click', hideSettingsView);
+
+            function showSettingsView() {
+                mainSearchWrapper.style.display = 'none';
+                resultsContainerElement.style.display = 'none';
+                logoContainer.style.display = 'none';
+                toolbar.style.display = 'none';
+                settingsView.style.display = 'flex'; // Use flex to enable column layout
+            }
+
+            function hideSettingsView() {
+                settingsView.style.display = 'none';
+                mainSearchWrapper.style.display = 'flex';
+                resultsContainerElement.style.display = ''; // Reset display
+                logoContainer.style.display = 'flex';
+                toolbar.style.display = 'flex';
+                searchInput.focus(); // Focus back on search
+            }
+
+            // --- Settings Functions --- End ---
+            
+            // The cacheCheckInterval is already defined earlier in the code
+            // No need to redefine it
+        }
+        document.addEventListener('DOMContentLoaded', function() {
+
+            var event = new CSEvent("com.tinytapes.terminal.panel", "APPLICATION");  
+            event.data = { message: "Load"};
+            event.extensionId = "com.example.terminal.panel"
+            terminal.csi.dispatchEvent(event);  
+
+            checkOfflineLicense();                    
+        });
+    </script>
+</body>
+</html>
