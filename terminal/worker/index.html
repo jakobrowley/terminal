@@ -18,9 +18,13 @@
       routing. Errors here (listener spawn failures, IPC issues, file
       system errors) are critical because they silently break the plugin
       without the user knowing.
+
+      The `async` attribute prevents the network fetch from blocking
+      worker startup in offline environments.
+
       See: https://tiny-tapes.sentry.io/settings/projects/terminal/
     -->
-    <script src="https://js.sentry-cdn.com/526855850f9344292c185b4581fdf6f3.min.js" crossorigin="anonymous"></script>
+    <script async src="https://js.sentry-cdn.com/526855850f9344292c185b4581fdf6f3.min.js" crossorigin="anonymous"></script>
     <script>
       if (typeof Sentry !== "undefined" && Sentry.onLoad) {
         Sentry.onLoad(function () {
@@ -38,6 +42,11 @@
               }
             },
             beforeSend: function (event) {
+              // IMPORTANT: do NOT drop stackless events. Native IPC errors
+              // from the worker (listener spawn failures, pipe issues,
+              // subprocess crashes) are the most critical signal we capture
+              // here and they often come without JS stack traces. Tag them
+              // instead so they can be filtered in the Sentry UI if noisy.
               if (
                 event.exception &&
                 event.exception.values &&
@@ -45,7 +54,8 @@
                   return !v.stacktrace || !v.stacktrace.frames || v.stacktrace.frames.length === 0;
                 })
               ) {
-                return null;
+                event.tags = event.tags || {};
+                event.tags.no_stacktrace = true;
               }
               return event;
             }
