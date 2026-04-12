@@ -3,6 +3,49 @@
 <head>
     <meta charset="UTF-8">
     <title>Terminal</title>
+
+    <!--
+      Sentry error telemetry (Component L instrumentation).
+      Loads lazily via Sentry's loader script — the full SDK is only pulled
+      from the CDN if/when an error actually occurs. Captures unhandled
+      errors and promise rejections across the panel UI, AICommandProcessor,
+      PremiereActions, AEActions, and terminal.jsx (via evalScript callbacks).
+      See: https://tiny-tapes.sentry.io/settings/projects/terminal/
+    -->
+    <script src="https://js.sentry-cdn.com/526855850f9344292c185b4581fdf6f3.min.js" crossorigin="anonymous"></script>
+    <script>
+      if (typeof Sentry !== "undefined" && Sentry.onLoad) {
+        Sentry.onLoad(function () {
+          Sentry.init({
+            release: "terminal@0.0.1",
+            environment: "production",
+            sendDefaultPii: false,
+            tracesSampleRate: 0,
+            replaysSessionSampleRate: 0,
+            replaysOnErrorSampleRate: 0,
+            initialScope: {
+              tags: {
+                plugin: "terminal",
+                process: "panel"
+              }
+            },
+            beforeSend: function (event) {
+              if (
+                event.exception &&
+                event.exception.values &&
+                event.exception.values.every(function (v) {
+                  return !v.stacktrace || !v.stacktrace.frames || v.stacktrace.frames.length === 0;
+                })
+              ) {
+                return null;
+              }
+              return event;
+            }
+          });
+        });
+      }
+    </script>
+
     <style>
         body {
             user-select: none;
