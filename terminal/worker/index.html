@@ -5,11 +5,54 @@
     <title>Terminal Worker</title>
     <script src="../panel/CSInterface.js"></script>
     <script>
-      if (typeof module === 'object') { 
-        window.module = module; 
-        module = undefined; 
+      if (typeof module === 'object') {
+        window.module = module;
+        module = undefined;
       }
     </script>
+
+    <!--
+      Sentry error telemetry for the Terminal worker process (Component L).
+      Uses Sentry's `window.sentryOnLoad` pattern for async loading.
+
+      Errors here (listener spawn failures, IPC issues, filesystem errors)
+      are critical because they silently break the plugin without the user
+      knowing.
+
+      See: https://tiny-tapes.sentry.io/settings/projects/terminal/
+    -->
+    <script>
+      window.sentryOnLoad = function () {
+        Sentry.init({
+          release: "terminal@0.0.1",
+          environment: "production",
+          sendDefaultPii: false,
+          tracesSampleRate: 0,
+          replaysSessionSampleRate: 0,
+          replaysOnErrorSampleRate: 0,
+          initialScope: {
+            tags: {
+              plugin: "terminal",
+              process: "worker"
+            }
+          },
+          beforeSend: function (event) {
+            if (
+              event.exception &&
+              event.exception.values &&
+              event.exception.values.every(function (v) {
+                return !v.stacktrace || !v.stacktrace.frames || v.stacktrace.frames.length === 0;
+              })
+            ) {
+              event.tags = event.tags || {};
+              event.tags.no_stacktrace = true;
+            }
+            return event;
+          }
+        });
+      };
+    </script>
+    <script async src="https://js.sentry-cdn.com/526855850f9344292c185b4581fdf6f3.min.js" crossorigin="anonymous"></script>
   </head>
   <body>
     <script>

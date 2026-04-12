@@ -3,6 +3,52 @@
 <head>
     <meta charset="UTF-8">
     <title>Terminal</title>
+
+    <!--
+      Sentry error telemetry (Component L instrumentation).
+      Uses Sentry's `window.sentryOnLoad` pattern — the inline script
+      defines the callback BEFORE the async loader runs, and the loader
+      calls it once the SDK is ready. This is the only correct pattern
+      when using `async` on the loader script.
+
+      Captures unhandled errors and promise rejections across the panel
+      UI, AICommandProcessor, PremiereActions, AEActions, and
+      terminal.jsx (via evalScript callbacks).
+      See: https://tiny-tapes.sentry.io/settings/projects/terminal/
+    -->
+    <script>
+      window.sentryOnLoad = function () {
+        Sentry.init({
+          release: "terminal@0.0.1",
+          environment: "production",
+          sendDefaultPii: false,
+          tracesSampleRate: 0,
+          replaysSessionSampleRate: 0,
+          replaysOnErrorSampleRate: 0,
+          initialScope: {
+            tags: {
+              plugin: "terminal",
+              process: "panel"
+            }
+          },
+          beforeSend: function (event) {
+            if (
+              event.exception &&
+              event.exception.values &&
+              event.exception.values.every(function (v) {
+                return !v.stacktrace || !v.stacktrace.frames || v.stacktrace.frames.length === 0;
+              })
+            ) {
+              event.tags = event.tags || {};
+              event.tags.no_stacktrace = true;
+            }
+            return event;
+          }
+        });
+      };
+    </script>
+    <script async src="https://js.sentry-cdn.com/526855850f9344292c185b4581fdf6f3.min.js" crossorigin="anonymous"></script>
+
     <style>
         body {
             user-select: none;
