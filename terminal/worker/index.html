@@ -13,56 +13,46 @@
 
     <!--
       Sentry error telemetry for the Terminal worker process (Component L).
-      The worker runs a hidden 1x1px CEP extension that spawns the native
-      keystroke listener and handles the global Cmd+1 / Ctrl+1 hotkey
-      routing. Errors here (listener spawn failures, IPC issues, file
-      system errors) are critical because they silently break the plugin
-      without the user knowing.
+      Uses Sentry's `window.sentryOnLoad` pattern for async loading.
 
-      The `async` attribute prevents the network fetch from blocking
-      worker startup in offline environments.
+      Errors here (listener spawn failures, IPC issues, filesystem errors)
+      are critical because they silently break the plugin without the user
+      knowing.
 
       See: https://tiny-tapes.sentry.io/settings/projects/terminal/
     -->
-    <script async src="https://js.sentry-cdn.com/526855850f9344292c185b4581fdf6f3.min.js" crossorigin="anonymous"></script>
     <script>
-      if (typeof Sentry !== "undefined" && Sentry.onLoad) {
-        Sentry.onLoad(function () {
-          Sentry.init({
-            release: "terminal@0.0.1",
-            environment: "production",
-            sendDefaultPii: false,
-            tracesSampleRate: 0,
-            replaysSessionSampleRate: 0,
-            replaysOnErrorSampleRate: 0,
-            initialScope: {
-              tags: {
-                plugin: "terminal",
-                process: "worker"
-              }
-            },
-            beforeSend: function (event) {
-              // IMPORTANT: do NOT drop stackless events. Native IPC errors
-              // from the worker (listener spawn failures, pipe issues,
-              // subprocess crashes) are the most critical signal we capture
-              // here and they often come without JS stack traces. Tag them
-              // instead so they can be filtered in the Sentry UI if noisy.
-              if (
-                event.exception &&
-                event.exception.values &&
-                event.exception.values.every(function (v) {
-                  return !v.stacktrace || !v.stacktrace.frames || v.stacktrace.frames.length === 0;
-                })
-              ) {
-                event.tags = event.tags || {};
-                event.tags.no_stacktrace = true;
-              }
-              return event;
+      window.sentryOnLoad = function () {
+        Sentry.init({
+          release: "terminal@0.0.1",
+          environment: "production",
+          sendDefaultPii: false,
+          tracesSampleRate: 0,
+          replaysSessionSampleRate: 0,
+          replaysOnErrorSampleRate: 0,
+          initialScope: {
+            tags: {
+              plugin: "terminal",
+              process: "worker"
             }
-          });
+          },
+          beforeSend: function (event) {
+            if (
+              event.exception &&
+              event.exception.values &&
+              event.exception.values.every(function (v) {
+                return !v.stacktrace || !v.stacktrace.frames || v.stacktrace.frames.length === 0;
+              })
+            ) {
+              event.tags = event.tags || {};
+              event.tags.no_stacktrace = true;
+            }
+            return event;
+          }
         });
-      }
+      };
     </script>
+    <script async src="https://js.sentry-cdn.com/526855850f9344292c185b4581fdf6f3.min.js" crossorigin="anonymous"></script>
   </head>
   <body>
     <script>
